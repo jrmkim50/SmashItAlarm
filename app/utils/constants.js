@@ -12,3 +12,5 @@ export const OFF = true;
 
 export const YES = "Yes";
 export const NO = "No";
+
+export const INSTALLED = "installed";

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect } from 'react';
 import openRating from './app/components/general/openRating';
 import AppNavigation from './app/navigation/AppNavigation';
+import { INSTALLED } from './app/utils/constants';
 
 const elapsedToDays = (ms) => {
   return ms / (24 * 60 * 60 * 1000);
@@ -10,7 +11,7 @@ const elapsedToDays = (ms) => {
 export default function App() {
   const defaultInstalled = { installDate: Date.now() };
   useEffect(() => {
-    AsyncStorage.getItem("installed").then(installed => {
+    AsyncStorage.getItem(INSTALLED).then(installed => {
       if (!installed) {
         AsyncStorage.setItem("installed", JSON.stringify(defaultInstalled));
       } else {
