@@ -7,15 +7,12 @@ import { Metrics } from '../../themes';
 
 export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt }) {
 
-    const video = useRef(); 
+    const video = useRef();
     const [aspect, setAspect] = useState(aspect_ratio);
     const [paused, setPaused] = useState(true)
     let data = null;
 
     const togglePlay = () => {
-        if (!video) {
-            return;
-        }
         setPaused(!paused);
     }
 

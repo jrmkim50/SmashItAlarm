@@ -4,12 +4,12 @@ import ActivityWindow from '../components/general/ActivityWindow';
 import Alarm from '../components/HomeScreen/Alarm';
 import { screenStyle } from '../utils/styles';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     return (
         <View style={screenStyle.container}>
-            <Alarm navigation = {navigation} setLoading={setLoading} setSuccess = {setSuccess}/>
+            <Alarm setLoading={setLoading} setSuccess = {setSuccess}/>
             {loading && <ActivityWindow loading={loading} success={success} message="Saved!"/>}
         </View>
     )

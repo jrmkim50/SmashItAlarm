@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "487648901483",
+    "project_id": "smash-it-alarm",
+    "storage_bucket": "smash-it-alarm.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:487648901483:android:7246015ce012e450d0b42e",
+        "android_client_info": {
+          "package_name": "com.smashitalarm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "487648901483-arn99fddkp238m8bevvftjtj8a4k5ea8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBd7OffFHsq4WW1P-FT770MttwdzrUVi_g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "487648901483-arn99fddkp238m8bevvftjtj8a4k5ea8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

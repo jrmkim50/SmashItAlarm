@@ -2,10 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native'
 import ActivityWindow from '../components/general/ActivityWindow';
-import openRating from '../components/general/openRating';
+import OpenRating from '../components/general/OpenRating';
 import Feedback from '../components/SettingsScreen/Feedback';
+import { RECORDINGS } from '../utils/constants';
 import { screenStyle } from '../utils/styles';
-import { sleep } from '../utils/utils';
+import { clearAsyncStorageKey, getAsyncStorageItem, sleep } from '../utils/utils';
 
 export default function SettingsScreen() {
     const [loading, setLoading] = useState(false);
@@ -16,12 +17,11 @@ export default function SettingsScreen() {
             { text: "Cancel", style: 'cancel' },
             { text: "Ok", onPress: async () => {
                 try {
-                    let recordings = await AsyncStorage.getItem("recordings");
-                    recordings = JSON.parse(recordings);
+                    let recordings = getAsyncStorageItem(RECORDINGS);
                     if (recordings && recordings.length > 0) {
                         setLoading(true);
                         await sleep(500);
-                        await AsyncStorage.removeItem("recordings");
+                        await clearAsyncStorageKey(RECORDINGS);
                         setSuccess(true);
                         await sleep(500);
                         setLoading(false);
@@ -29,7 +29,6 @@ export default function SettingsScreen() {
                     } else {
                         alert("Nothing to delete!")
                     }
-                    
                 } catch(err) {
                     console.log(err.message)
                 }
@@ -42,7 +41,7 @@ export default function SettingsScreen() {
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container} >
                     <Text style={styles.header}>Settings</Text>
-                    <TouchableOpacity style={styles.button} onPress={openRating}>
+                    <TouchableOpacity style={styles.button} onPress={OpenRating}>
                         <Text style={{fontSize: 18, fontWeight: 'bold', color: 'white'}}>Rate us!</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={clearData} style={[styles.button, {backgroundColor: 'rgba(204,64,57,1)'}]}>

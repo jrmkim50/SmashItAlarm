@@ -4,7 +4,8 @@ import { FlatList, Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import FlatListItem from './FlatListItem';
 import { useIsFocused } from "@react-navigation/native";
-import { sleep } from '../../utils/utils';
+import { getAsyncStorageItem, setAsyncStorageItem, sleep } from '../../utils/utils';
+import { RECORDINGS } from '../../utils/constants';
 
 export default function Recordings({ setLoading, setSuccess }) {
     const [uris, setURIs] = useState(null);
@@ -18,8 +19,7 @@ export default function Recordings({ setLoading, setSuccess }) {
 
     const refreshData = () => {
         setRefreshing(true);
-        AsyncStorage.getItem("recordings").then((recordings) => {
-            recordings = JSON.parse(recordings);
+        getAsyncStorageItem(RECORDINGS).then((recordings) => {
             setURIs(recordings);
             setRefreshing(false);
         }).catch(err => {
@@ -46,7 +46,7 @@ export default function Recordings({ setLoading, setSuccess }) {
         setLoading(false);
         setSuccess(false);
         try {
-            await AsyncStorage.setItem("recordings", JSON.stringify(tempURIs))
+            await setAsyncStorageItem(RECORDINGS, tempURIs);
         } catch(err) {
             console.log(err.message);
         }

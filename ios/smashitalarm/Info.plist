@@ -26,8 +26,13 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<string></string>
+		</dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<false/>
+		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Give $(PRODUCT_NAME) permission to access your camera when using recording functionality</string>

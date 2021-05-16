@@ -2,12 +2,11 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { useState, useEffect, useRef } from 'react';
-import { PLAYING, PAUSED, LOADING } from '../../utils/constants';
+import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY } from '../../utils/constants';
 import * as Linking from 'expo-linking';
-import { sleep } from '../../utils/utils';
+import { getAsyncStorageItem, setAsyncStorageItem, sleep } from '../../utils/utils';
 import Torch from 'react-native-torch';
 import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Alarm({ setLoading, setSuccess }) {
     const [alarm, setAlarm] = useState(null);
@@ -118,7 +117,7 @@ export default function Alarm({ setLoading, setSuccess }) {
         turnOffStrobe();
         turnOnFlashlight();
         let interval = strobeBehavior();
-        intervalRef.current = interval; 
+        intervalRef.current = interval;
     }
 
     const initiateCall = async () => {
@@ -129,6 +128,11 @@ export default function Alarm({ setLoading, setSuccess }) {
         if (alarm) {
             try {
                 await alarm.playFromPositionAsync(0);
+                let activity = await getAsyncStorageItem(ACTIVITY);
+                if (!activity.alarmPlayed) {
+                    activity.alarmPlayed = true;
+                    setAsyncStorageItem(ACTIVITY);
+                }
             } catch (err) {
                 console.log(err.message)
             }
@@ -171,18 +175,20 @@ export default function Alarm({ setLoading, setSuccess }) {
                 console.log(err);
                 return;
             }
-
             setRecordingState(true);
+            let activity = await getAsyncStorageItem(ACTIVITY);
             let result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All });
             if (!result.cancelled) { 
                 setLoading(true);
                 await sleep(500);
-                let recordings = JSON.parse(await AsyncStorage.getItem("recordings"));
+                let recordings = await getAsyncStorageItem(RECORDINGS);
                 if (!recordings) {
                     recordings = [];
                 }
                 recordings.push({ uri: result.uri, type: result.type, aspect_ratio: result.width / result.height });
-                await AsyncStorage.setItem("recordings", JSON.stringify(recordings));
+                activity.numRecordings++;
+                await setAsyncStorageItem(ACTIVITY, activity);
+                await setAsyncStorageItem(RECORDINGS, recordings);
                 setSuccess(true);
                 await sleep(500);
                 setLoading(false);

@@ -1,4 +1,4 @@
-export const TESTING = false;
+export const TESTING = true;
 
 export const GOOGLE_PACKAGE_NAME = 'com.smashitalarm';
 export const APPLE_STORE_URL = 'https://apps.apple.com/us/app/smash-it-alarm/id1564343574';
