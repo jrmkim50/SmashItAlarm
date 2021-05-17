@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native'
+import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native'
 import ActivityWindow from '../components/general/ActivityWindow';
 import OpenRating from '../components/general/OpenRating';
 import Feedback from '../components/SettingsScreen/Feedback';
@@ -19,7 +19,9 @@ export default function SettingsScreen({ navigation }) {
         getSavedPhoneNumber().then(numberData => {
             setEmergencyNumber(numberData.number);
             setAutomatically(numberData.auto_generate);
-            setLoadingData(false);
+            sleep(500).then(() => {
+                setLoadingData(false);
+            })
         })
 
         getAsyncStorageItem(BADGES).then(result => {
@@ -101,13 +103,16 @@ export default function SettingsScreen({ navigation }) {
                         <Text style={{fontSize: 18, fontWeight: 'bold', color: 'white'}}>Clear my recordings</Text>
                     </TouchableOpacity>
                     <Text style={styles.emergencyNumber}>Emergency Services: {emergencyNumber}</Text>
+                    {loadingData && 
+                        <ActivityIndicator/>
+                    }
                     {!loadingData &&
                         <TouchableOpacity onPress={toggleAutoGeneration} style={[styles.button, { backgroundColor: 'rgba(14,104,207,1)'}]}>
                             <Text style={{fontSize: 18, fontWeight: 'bold', color: 'white', textAlign: 'center'}}>Set Emergency Number {automatically ? "Manually" : "Automatically"}</Text>
                         </TouchableOpacity>
                     }
                     {(!loadingData && !automatically) && 
-                        <TouchableOpacity onPress={changeNumber} style={[styles.button, { backgroundColor: 'rgba(14,104,207,1)'}]}>
+                        <TouchableOpacity onPress={changeNumber} style={[styles.button, { backgroundColor: 'rgba(204,64,57,1)'}]}>
                             <Text style={{fontSize: 18, fontWeight: 'bold', color: 'white', textAlign: 'center'}}>Set New Number</Text>
                         </TouchableOpacity>
                     }
