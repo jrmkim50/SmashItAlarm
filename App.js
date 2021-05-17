@@ -5,9 +5,19 @@ import AppNavigation from './app/navigation/AppNavigation';
 import { getPhoneNumber, savePhoneNumber } from './app/utils/alarm';
 import { AUTO_GEN, EMERGENCY_NUMBER } from './app/utils/constants';
 import { clearAsyncStorageKey } from './app/utils/utils';
+// import { Notifications } from 'react-native-notifications';
 
 export default function App() {
-  
+
+  // let localNotification = Notifications.postLocalNotification({
+  //   body: "Local notification!",
+  //   title: "Local Notification Title",
+  //   sound: "chime.aiff",
+  //   silent: false,
+  //   category: "SOME_CATEGORY",
+  //   userInfo: {}
+  // });
+
   useEffect(() => {
     analyzeInstalledData().then(toAsk => {
       if (toAsk) {
@@ -16,10 +26,10 @@ export default function App() {
     })
 
     getPhoneNumber().then(number => {
-        savePhoneNumber(number, AUTO_GEN);
+      savePhoneNumber(number, AUTO_GEN);
     });
   }, [])
-  
+
   return (
     <AppNavigation />
   );
