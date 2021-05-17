@@ -38,5 +38,5 @@ export const clearAsyncStorage = () => {
 }
 
 export const clearAsyncStorageKey = async (key) => {
-    await AsyncStorage.removeItem("recordings");
+    await AsyncStorage.removeItem(key);
 }

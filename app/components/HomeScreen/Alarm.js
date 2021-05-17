@@ -3,10 +3,9 @@ import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { useState, useEffect, useRef } from 'react';
 import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY } from '../../utils/constants';
-import * as Linking from 'expo-linking';
 import { getAsyncStorageItem, setAsyncStorageItem, sleep } from '../../utils/utils';
-import Torch from 'react-native-torch';
 import * as ImagePicker from 'expo-image-picker';
+import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, getSavedPhoneNumber } from '../../utils/alarm';
 
 export default function Alarm({ setLoading, setSuccess }) {
     const [alarm, setAlarm] = useState(null);
@@ -18,10 +17,14 @@ export default function Alarm({ setLoading, setSuccess }) {
     const torchRef = useRef();
     const intervalRef = useRef();
 
-    const phoneNumber = "911";
+    let phoneNumber = "911";
+    getSavedPhoneNumber().then(number => {
+        phoneNumber = number.number;
+        phoneNumber = phoneNumber ? phoneNumber : "911";
+    });
 
     useEffect(() => {
-        turnOffStrobe();
+        turnOffStrobe(torchRef, intervalRef);
         Audio.setAudioModeAsync({
             playsInSilentModeIOS: true
         }).then(() => {
@@ -42,7 +45,7 @@ export default function Alarm({ setLoading, setSuccess }) {
                 try {
                     alarm.unloadAsync();
                 } catch (err) {
-                    console.log(err);
+                    console.log(err.message);
                 }
             }
         }
@@ -50,104 +53,30 @@ export default function Alarm({ setLoading, setSuccess }) {
 
     useEffect(() => {
         if (soundState === PLAYING) {
-            turnOnAlarm();
+            turnOnAlarm(alarm);
         } else if (soundState === PAUSED) {
-            turnOffAlarm();
+            turnOffAlarm(alarm);
         }
     }, [soundState])
 
     useEffect(() => {
         if (strobeState === PLAYING) {
-            turnOnStrobe();
+            turnOnStrobe(torchRef, intervalRef);
         } else {            
-            turnOffStrobe();
+            turnOffStrobe(torchRef, intervalRef);
         } 
     }, [strobeState])
 
     useEffect(() => {
         if (!recordingState) {
             if (strobeState === PLAYING) {
-                turnOnStrobe();
+                turnOnStrobe(torchRef, intervalRef);
             }
             if (soundState === PLAYING) {
-                turnOnAlarm();
+                turnOnAlarm(alarm);
             }
         }
-    }, [recordingState])
-
-    const strobeBehavior = () => {
-        let interval = setInterval(() => {
-            if (torchRef.current) {
-                turnOffFlashlight(); 
-            } else {
-                turnOnFlashlight();
-            }
-        }, 1000);
-
-        return interval;
-    }
-
-    const turnOnFlashlight = () => {
-        torchRef.current = true;
-        try {
-            Torch.switchState(true);
-        } catch(err) {
-            console.log("NO FLASHLIGHT!")
-        }
-    }
-
-    const turnOffFlashlight = () => {
-        torchRef.current = false;
-        try {
-            Torch.switchState(false);
-        } catch(err) {
-            console.log("NO FLASHLIGHT!")
-        }
-    }
-
-    const turnOffStrobe = () => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-        turnOffFlashlight();
-    }
-
-    const turnOnStrobe = () => {
-        turnOffStrobe();
-        turnOnFlashlight();
-        let interval = strobeBehavior();
-        intervalRef.current = interval;
-    }
-
-    const initiateCall = async () => {
-        Linking.openURL("tel:" + phoneNumber);
-    }
-
-    const turnOnAlarm = async () => {
-        if (alarm) {
-            try {
-                await alarm.playFromPositionAsync(0);
-                let activity = await getAsyncStorageItem(ACTIVITY);
-                if (!activity.alarmPlayed) {
-                    activity.alarmPlayed = true;
-                    setAsyncStorageItem(ACTIVITY);
-                }
-            } catch (err) {
-                console.log(err.message)
-            }
-        }
-    }
-
-    const turnOffAlarm = async () => {
-        if (alarm) {
-            try {
-                await alarm.pauseAsync();
-            } catch (err) {
-                console.log(err.message)
-            }
-        }
-    }
+    }, [recordingState]) 
 
     const onPress = async () => {
         if (alarm) {
@@ -169,10 +98,10 @@ export default function Alarm({ setLoading, setSuccess }) {
         }
         try {
             try {
-                turnOffStrobe();
-                await turnOffAlarm();
+                turnOffStrobe(torchRef, intervalRef);
+                await turnOffAlarm(alarm);
             } catch (err) {
-                console.log(err);
+                console.log(err.message);
                 return;
             }
             setRecordingState(true);
@@ -182,9 +111,7 @@ export default function Alarm({ setLoading, setSuccess }) {
                 setLoading(true);
                 await sleep(500);
                 let recordings = await getAsyncStorageItem(RECORDINGS);
-                if (!recordings) {
-                    recordings = [];
-                }
+                recordings = recordings ? recordings : [];
                 recordings.push({ uri: result.uri, type: result.type, aspect_ratio: result.width / result.height });
                 activity.numRecordings++;
                 await setAsyncStorageItem(ACTIVITY, activity);
@@ -196,6 +123,8 @@ export default function Alarm({ setLoading, setSuccess }) {
             }
             setRecordingState(false);
         } catch (err) {
+            setRecordingState(false);
+            alert("We had some trouble accessing the camera!")
             console.log(err.message)
         }
     }
@@ -209,7 +138,7 @@ export default function Alarm({ setLoading, setSuccess }) {
                 <Text style={styles.text}>{(soundState === PAUSED || soundState === LOADING) ? "Activate Alarm!" : "Stop Alarm!"}</Text>
             </TouchableOpacity>
             {soundState === PLAYING &&
-                <TouchableOpacity style={[styles.alarmButton, styles.secondary]} onPress={initiateCall}>
+                <TouchableOpacity style={[styles.alarmButton, styles.secondary]} onPress={() => initiateCall(phoneNumber)}>
                     <Text style={styles.text}>Emergency Services</Text>
                 </TouchableOpacity>
             }

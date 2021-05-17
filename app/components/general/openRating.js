@@ -27,12 +27,12 @@ export default async function OpenRating() {
         let installed = await getAsyncStorageItem(INSTALLED);
         installed.timesAsked++;
         installed.lastAsked = Date.now();
+        Alert.alert("Rate us", "Would you like to share your review with us?", [
+            { text: "Sure", onPress: () => openStore(installed) },
+            { text: 'No Thanks!', style: 'cancel', onPress: () => recordData(installed, DECLINE_RATING)
+            }
+        ])
     } catch(err) {
         console.log(err.message);
     }
-    Alert.alert("Rate us", "Would you like to share your review with us?", [
-        { text: "Sure", onPress: (installed) => openStore(installed) },
-        { text: 'No Thanks!', style: 'cancel', onPress: (installed) => recordData(installed, DECLINE_RATING)
-        }
-    ])
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,8 @@ import { Metrics } from '../themes';
 import HomeStackComponent from './HomeStackComponent';
 import RecordingsStackComponent from './RecordingsStackComponent';
 import SettingsScreen from '../screens/SettingsScreen';
+import { getAsyncStorageItem, setAsyncStorageItem } from '../utils/utils';
+import { BADGES, defaultBadges } from '../utils/constants';
 
 const TabNav = createBottomTabNavigator();
 const TAB_NAMES = {
@@ -15,6 +17,17 @@ const TAB_NAMES = {
 }
 
 export default function AppNavigation() {
+    const [tabBarBadge, setTabBarBadge] = useState(0)
+    useEffect(() => {
+        getAsyncStorageItem(BADGES).then(result => {
+            let badges = result ? result : defaultBadges;
+            if (badges.checkEmergencyServicesSettings) {
+                setTabBarBadge(1);
+            }
+            setAsyncStorageItem(BADGES, badges);
+        })
+    }, [])
+
     return (
         <NavigationContainer>
             <TabNav.Navigator
@@ -39,7 +52,8 @@ export default function AppNavigation() {
             >
                 <TabNav.Screen name={TAB_NAMES.home} component={HomeStackComponent}/>
                 <TabNav.Screen name={TAB_NAMES.recordings} component={RecordingsStackComponent}/>
-                <TabNav.Screen name={TAB_NAMES.settings} component={SettingsScreen}/>
+                <TabNav.Screen name={TAB_NAMES.settings} component={SettingsScreen} 
+                               options={{ tabBarBadge: tabBarBadge }}/>
             </TabNav.Navigator>
         </NavigationContainer>
     )

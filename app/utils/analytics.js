@@ -1,11 +1,11 @@
 import { TESTING } from "../config";
-import { INSTALLED, ACTIVITY, defaultInstalled, MIN_RATE_ASK_TIME, defaultActivity } from "./constants";
+import { INSTALLED, ACTIVITY, defaultInstalled, MIN_INSTALL_TIME, MIN_RATE_ASK_TIME, defaultActivity } from "./constants";
 import { elapsedToDays, getAsyncStorageItem, setAsyncStorageItem } from "./utils";
 
 // Given an object of format installed (see constants.js), returns whether the data fits criteria to ask for a rating
 const validateInstallation = (installed) => {
     let installElapsed = Date.now() - installed.installDate;
-    if (installed.timesAsked == 0) {
+    if (installed.timesAsked === 0) {
         if (elapsedToDays(installElapsed) >= MIN_INSTALL_TIME) {
             return true;
         }
