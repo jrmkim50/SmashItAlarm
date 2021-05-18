@@ -1,6 +1,8 @@
 import { TESTING } from "../config";
-import { INSTALLED, ACTIVITY, defaultInstalled, MIN_INSTALL_TIME, MIN_RATE_ASK_TIME, defaultActivity } from "./constants";
-import { elapsedToDays, getAsyncStorageItem, setAsyncStorageItem } from "./utils";
+import { INSTALLED_OLD_DO_NOT_USE, INSTALLED, ACTIVITY, defaultInstalled, MIN_INSTALL_TIME, MIN_RATE_ASK_TIME, defaultActivity } from "./constants";
+import { clearAsyncStorageKey, elapsedToDays, getAsyncStorageItem, setAsyncStorageItem } from "./utils";
+import { getVersion } from 'react-native-device-info';
+import { Alert } from "react-native";
 
 // Given an object of format installed (see constants.js), returns whether the data fits criteria to ask for a rating
 const validateInstallation = (installed) => {
@@ -36,12 +38,24 @@ const checkActivity = (installed, activity) => {
 // Returns true or false on whether to ask for a rating or not
 export const analyzeInstalledData = async () => {
     try {
+        let oldInstalled = await getAsyncStorageItem(INSTALLED_OLD_DO_NOT_USE);
         let installed = await getAsyncStorageItem(INSTALLED);
         if (TESTING) {
             console.log(installed);
         }
         if (!installed) {
-            setAsyncStorageItem(INSTALLED, defaultInstalled);
+            installed = defaultInstalled;
+            if (oldInstalled) {
+                installed.installDate = oldInstalled.installDate;
+                if (oldInstalled.asked) {
+                    installed.rated = true;
+                }
+                clearAsyncStorageKey(INSTALLED_OLD_DO_NOT_USE);
+            }
+            setAsyncStorageItem(INSTALLED, installed);
+        }
+        if (getVersion() != installed.version) {
+            Alert("A new update has been released! Please update the app.")
             return false;
         }
         let activity = await getAsyncStorageItem(ACTIVITY);

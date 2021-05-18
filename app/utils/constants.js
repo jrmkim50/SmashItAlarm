@@ -6,13 +6,14 @@
  * 
  */ 
 
-export const defaultInstalled = { installDate: Date.now(), rated: false, lastAsked: null, timesAsked: 0 };
+export const defaultInstalled = { installDate: Date.now(), rated: false, lastAsked: null, timesAsked: 0, version: 2 };
 export const defaultActivity = { numRecordings: 0, alarmPlayed: false };
 export const defaultEmergencyNumber = { number: "911", auto_generate: true }
 export const defaultBadges = { checkEmergencyServicesSettings: true }
 export const defaultNotifications = { checkSettings: "5/17" }
 
 // Async Storage
+export const INSTALLED_OLD_DO_NOT_USE = "installed";
 export const INSTALLED = "installed_new";  // used to be installed but I added some new fields
 export const ACTIVITY = "activity";
 export const EMERGENCY_NUMBER = "EMERGENCY_NUMBER";
