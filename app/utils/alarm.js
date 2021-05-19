@@ -112,21 +112,20 @@ export const getSavedPhoneNumber = async () => {
 // feature is on and if it is a new number. If this process was started manually, the auto generate feature will 
 // turn off in the future and we will save the new number
 export const savePhoneNumber = async (number, entity) => {
-    let numberData = defaultEmergencyNumber;
+    let numberData = {...defaultEmergencyNumber};
     numberData.number = number;
 
     let savedNumberData = await getSavedPhoneNumber();
     if (!savedNumberData) {
-        setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
+        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
         return;
     }
     if (entity === AUTO_GEN && savedNumberData.auto_generate && numberData.number !== savedNumberData.number) {
-        numberData.auto_generate = savedNumberData.auto_generate;
-        setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
+        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
     }
     if (entity === USER_GEN) {
         numberData.auto_generate = false;
-        setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
+        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
     }
 }
 

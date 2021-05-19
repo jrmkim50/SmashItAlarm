@@ -113,7 +113,7 @@ export default function Alarm({ setLoading, setSuccess }) {
                 let recordings = await getAsyncStorageItem(RECORDINGS);
                 recordings = recordings ? recordings : [];
                 recordings.push({ uri: result.uri, type: result.type, aspect_ratio: result.width / result.height });
-                activity.numRecordings++;
+                activity.numRecordings = recordings.length;
                 await setAsyncStorageItem(ACTIVITY, activity);
                 await setAsyncStorageItem(RECORDINGS, recordings);
                 setSuccess(true);

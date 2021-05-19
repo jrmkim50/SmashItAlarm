@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { INSTALLED_OLD_DO_NOT_USE, INSTALLED, ACTIVITY, EMERGENCY_NUMBER, BADGES } from './constants'
 
 export const elapsedToDays = (ms) => {
     return ms / (24 * 60 * 60 * 1000);
@@ -39,4 +40,19 @@ export const clearAsyncStorage = () => {
 
 export const clearAsyncStorageKey = async (key) => {
     await AsyncStorage.removeItem(key);
+}
+
+export const logAsyncStorage = async () => {
+    let toLog = [
+        INSTALLED_OLD_DO_NOT_USE,
+        INSTALLED,
+        ACTIVITY,
+        EMERGENCY_NUMBER,
+        BADGES
+    ]
+    for (log of toLog) {
+        let obj = await getAsyncStorageItem(log)
+        console.log(obj)
+    }
+    console.log("===========")
 }

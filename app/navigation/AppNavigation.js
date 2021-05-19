@@ -20,7 +20,7 @@ export default function AppNavigation() {
     const [tabBarBadge, setTabBarBadge] = useState(0)
     useEffect(() => {
         getAsyncStorageItem(BADGES).then(result => {
-            let badges = result ? result : defaultBadges;
+            let badges = result ? result : {...defaultBadges};
             if (badges.checkEmergencyServicesSettings) {
                 setTabBarBadge(1);
             }
