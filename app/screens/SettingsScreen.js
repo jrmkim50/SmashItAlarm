@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native'
+import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator, TextInput } from 'react-native'
 import ActivityWindow from '../components/general/ActivityWindow';
 import OpenRating from '../components/general/OpenRating';
 import Feedback from '../components/SettingsScreen/Feedback';
@@ -12,6 +12,7 @@ export default function SettingsScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [emergencyNumber, setEmergencyNumber] = useState(null);
+    const [tempEmergencyNumber, setTempEmergencyNumber] = useState(null);
     const [loadingData, setLoadingData] = useState(true);
     const [automatically, setAutomatically] = useState(true);
 
@@ -72,23 +73,11 @@ export default function SettingsScreen({ navigation }) {
         await savePhoneNumber(number, USER_GEN);
         setEmergencyNumber(number);
         setAutomatically(false);
+        setTempEmergencyNumber(null);
     }
 
     const changeNumber = () => {
-        Alert.prompt(
-            "Enter the new emergency number",
-            "Enter a new emergency number to call",
-            [
-                {
-                    text: "Cancel",
-                    style: "cancel"
-                },
-                {
-                    text: "OK",
-                    onPress: input => saveNewNumber(input)
-                }
-            ],
-        )
+        saveNewNumber(tempEmergencyNumber)
     }
 
     return (
@@ -112,10 +101,14 @@ export default function SettingsScreen({ navigation }) {
                         </TouchableOpacity>
                     }
                     {(!loadingData && !automatically) && 
-                        <TouchableOpacity onPress={changeNumber} style={[styles.button, { backgroundColor: 'rgba(204,64,57,1)'}]}>
-                            <Text style={{fontSize: 18, fontWeight: 'bold', color: 'white', textAlign: 'center'}}>Set New Number</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between'}}>
+                            <TextInput placeholder="Enter new number here" style={{ flex: 1, padding: 5, borderBottomWidth: 1, borderColor: 'gray', marginRight: 15 }} onChangeText={setTempEmergencyNumber} value={tempEmergencyNumber} placeholderTextColor="gray"/>
+                            <TouchableOpacity onPress={changeNumber} style={[styles.smallButton, { backgroundColor: 'rgba(204,64,57,1)'}]}>
+                                <Text style={{fontSize: 18, fontWeight: 'bold', color: 'white', textAlign: 'center'}}>Enter</Text>
+                            </TouchableOpacity>
+                        </View>
                     }
+                    <Text style={styles.emergencyNumber}>Email us at smash.alarm@gmail.com</Text>
                     {/* <Feedback setLoading = {setLoading}/> */}
                     {loading && <ActivityWindow loading={loading} success={success}/>}
                 </View>
@@ -139,6 +132,18 @@ const styles = StyleSheet.create({
     },
     button: {
         width: '100%',
+        alignItems: 'center',
+        marginVertical: 10,
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: 'rgba(67,133,66,1)',
+        shadowColor: 'rgba(0,0,0, .4)', // IOS
+        shadowOffset: { height: 3, width: 0 }, // IOS
+        shadowOpacity: 1, // IOS
+        shadowRadius: 5, //IOS
+        elevation: 2, // Android   
+    },
+    smallButton: {
         alignItems: 'center',
         marginVertical: 10,
         padding: 10,
