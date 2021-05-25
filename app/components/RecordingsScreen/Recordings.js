@@ -6,6 +6,7 @@ import FlatListItem from './FlatListItem';
 import { useIsFocused } from "@react-navigation/native";
 import { getAsyncStorageItem, setAsyncStorageItem, sleep } from '../../utils/utils';
 import { RECORDINGS } from '../../utils/constants';
+import RNFS from 'react-native-fs';
 
 export default function Recordings({ setLoading, setSuccess }) {
     const [uris, setURIs] = useState(null);
@@ -38,6 +39,8 @@ export default function Recordings({ setLoading, setSuccess }) {
     const confirmDeletion = async (index) => {
         setLoading(true);
         let tempURIs = [...uris];
+        let uri = tempURIs[index];
+        const filePath = uri.split('///').pop()
         tempURIs.splice(index, 1);
         setURIs(tempURIs);
         await sleep(500);
@@ -46,6 +49,9 @@ export default function Recordings({ setLoading, setSuccess }) {
         setLoading(false);
         setSuccess(false);
         try {
+            if (await RNFS.exists(filePath)) {
+                await RNFS.unlink(filePath)
+            }
             await setAsyncStorageItem(RECORDINGS, tempURIs);
         } catch(err) {
             console.log(err.message);

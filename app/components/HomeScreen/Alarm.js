@@ -2,31 +2,32 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { useState, useEffect, useRef } from 'react';
-import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY } from '../../utils/constants';
+import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY, tabBarHeight } from '../../utils/constants';
 import { getAsyncStorageItem, setAsyncStorageItem, sleep } from '../../utils/utils';
 import * as ImagePicker from 'expo-image-picker';
-import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, getSavedPhoneNumber } from '../../utils/alarm';
+import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, getSavedPhoneNumber, autoRecordStart, autoRecordStop } from '../../utils/alarm';
+import { RNCamera } from 'react-native-camera';
+import { INTERRUPTION_MODE_ANDROID_DUCK_OTHERS } from 'expo-av/build/Audio';
 
 export default function Alarm({ setLoading, setSuccess }) {
     const [alarm, setAlarm] = useState(null);
     const [soundState, setSoundState] = useState(LOADING);
     const [strobeState, setStrobeState] = useState(PAUSED);
     const [recordingState, setRecordingState] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState("911");
+    const [isAutoRecord, setIsAutoRecord] = useState(false);
 
     const alarmSource = "../../assets/Alarm-Slow-A2.mp3";
     const torchRef = useRef();
     const intervalRef = useRef();
-
-    let phoneNumber = "911";
-    getSavedPhoneNumber().then(number => {
-        phoneNumber = number.number;
-        phoneNumber = phoneNumber ? phoneNumber : "911";
-    });
+    const cameraRef = useRef();
 
     useEffect(() => {
         turnOffStrobe(torchRef, intervalRef);
         Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true
+            playsInSilentModeIOS: true,
+            allowsRecordingIOS: true,
+            interruptionModeAndroid: INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
         }).then(() => {
             Audio.Sound.createAsync(require(alarmSource), { isLooping: true }).then(({ sound }) => {
                 setSoundState(PAUSED);
@@ -37,6 +38,9 @@ export default function Alarm({ setLoading, setSuccess }) {
         }).catch(err => {
             console.log(err.message)
         })
+        getSavedPhoneNumber().then(number => {
+            setPhoneNumber((number && number.number) ? number.number : "911");
+        });
     }, [])
 
     useEffect(() => {
@@ -54,29 +58,35 @@ export default function Alarm({ setLoading, setSuccess }) {
     useEffect(() => {
         if (soundState === PLAYING) {
             turnOnAlarm(alarm);
+            autoRecordStart(cameraRef);
+            setIsAutoRecord(true);
         } else if (soundState === PAUSED) {
             turnOffAlarm(alarm);
+            if (isAutoRecord) {
+                autoRecordStop(cameraRef);
+                setIsAutoRecord(false);
+            }
         }
     }, [soundState])
 
     useEffect(() => {
         if (strobeState === PLAYING) {
             turnOnStrobe(torchRef, intervalRef);
-        } else {            
+        } else {
             turnOffStrobe(torchRef, intervalRef);
-        } 
+        }
     }, [strobeState])
 
-    useEffect(() => {
-        if (!recordingState) {
-            if (strobeState === PLAYING) {
-                turnOnStrobe(torchRef, intervalRef);
-            }
-            if (soundState === PLAYING) {
-                turnOnAlarm(alarm);
-            }
-        }
-    }, [recordingState]) 
+    // useEffect(() => {
+    //     if (!recordingState) {
+    //         if (strobeState === PLAYING) {
+    //             turnOnStrobe(torchRef, intervalRef);
+    //         }
+    //         if (soundState === PLAYING) {
+    //             turnOnAlarm(alarm);
+    //         }
+    //     }
+    // }, [recordingState]) 
 
     const onPress = async () => {
         if (alarm) {
@@ -97,17 +107,19 @@ export default function Alarm({ setLoading, setSuccess }) {
             return;
         }
         try {
-            try {
-                turnOffStrobe(torchRef, intervalRef);
-                await turnOffAlarm(alarm);
-            } catch (err) {
-                console.log(err.message);
-                return;
-            }
+            // try {
+            //     turnOffStrobe(torchRef, intervalRef);
+            //     await turnOffAlarm(alarm);
+            // } catch (err) {
+            //     console.log(err.message);
+            //     return;
+            // }
+            autoRecordStop(cameraRef);
             setRecordingState(true);
+            setIsAutoRecord(false);
             let activity = await getAsyncStorageItem(ACTIVITY);
             let result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All });
-            if (!result.cancelled) { 
+            if (!result.cancelled) {
                 setLoading(true);
                 await sleep(500);
                 let recordings = await getAsyncStorageItem(RECORDINGS);
@@ -122,6 +134,8 @@ export default function Alarm({ setLoading, setSuccess }) {
                 setSuccess(false);
             }
             setRecordingState(false);
+            setIsAutoRecord(true);
+            autoRecordStart(cameraRef);
         } catch (err) {
             setRecordingState(false);
             alert("We had some trouble accessing the camera!")
@@ -131,10 +145,10 @@ export default function Alarm({ setLoading, setSuccess }) {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={onPress} 
-                              style={soundState === LOADING ? [styles.alarmButton, styles.loading, styles.warning] : 
-                                                              [styles.alarmButton, styles.warning]} 
-                              disabled={soundState === LOADING}>
+            <TouchableOpacity onPress={onPress}
+                style={soundState === LOADING ? [styles.alarmButton, styles.loading, styles.warning] :
+                    [styles.alarmButton, styles.warning]}
+                disabled={soundState === LOADING}>
                 <Text style={styles.text}>{(soundState === PAUSED || soundState === LOADING) ? "Activate Alarm!" : "Stop Alarm!"}</Text>
             </TouchableOpacity>
             {soundState === PLAYING &&
@@ -143,7 +157,7 @@ export default function Alarm({ setLoading, setSuccess }) {
                 </TouchableOpacity>
             }
             {soundState === PLAYING &&
-                <TouchableOpacity style={[styles.alarmButton, styles.success]} onPress={openCamera}>
+                <TouchableOpacity style={[styles.alarmButton, styles.success]} onPress={openCamera} disabled={recordingState}>
                     <Text style={styles.text}>Start Recording</Text>
                 </TouchableOpacity>
             }
@@ -152,14 +166,37 @@ export default function Alarm({ setLoading, setSuccess }) {
                     <Text style={styles.smallText}>{strobeState === PLAYING ? "Turn off Strobe" : "Turn on Strobe"}</Text>
                 </TouchableOpacity>
             }
+            <View style={styles.cameraView}>
+            <RNCamera 
+                ref={ref => { cameraRef.current = ref }}
+                androidCameraPermissionOptions={{
+                    title: 'Permission to use camera',
+                    message: 'We need your permission to use your camera for auto-record functionality',
+                    buttonPositive: 'OK',
+                    buttonNegative: 'Cancel',
+                }} 
+                androidRecordAudioPermissionOptions={{
+                    title: 'Permission to use audio recording',
+                    message: 'We need your permission to use your microphone for auto-record functionality',
+                    buttonPositive: 'OK',
+                    buttonNegative: 'Cancel',
+                }}
+                captureAudio={true}
+                flashMode={RNCamera.Constants.FlashMode.off}
+                type={RNCamera.Constants.Type.back} 
+                style={styles.camera}
+            />
+            </View>
         </View>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
+        position: 'relative',
         flex: 1,
         justifyContent: 'center',
+        width: '95%',
     },
     alarmButton: {
         alignItems: "center",
@@ -205,5 +242,21 @@ const styles = StyleSheet.create({
     smallText: {
         fontSize: 20,
         color: 'white',
+    },
+    cameraView: {
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        height: 150,
+        width: 150,
+        overflow: 'hidden'
+    },
+    camera: {
+        flex: 1,
+        maxHeight: 150,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
     }
 })

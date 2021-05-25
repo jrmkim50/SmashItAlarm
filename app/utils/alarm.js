@@ -1,25 +1,27 @@
 import * as Linking from 'expo-linking';
 import Torch from 'react-native-torch';
-import { ACTIVITY, AUTO_GEN, COUNTRY_CODE, defaultEmergencyNumber, EMERGENCY_NUMBER, USER_GEN } from './constants';
+import { ACTIVITY, AUTO_GEN, COUNTRY_CODE, defaultEmergencyNumber, EMERGENCY_NUMBER, RECORDINGS, USER_GEN } from './constants';
 import { clearAsyncStorageKey, getAsyncStorageItem, setAsyncStorageItem } from './utils';
 import * as RNLocalize from "react-native-localize";
 import { TESTING } from '../config';
+import { RNCamera } from 'react-native-camera';
+import { Dimensions } from 'react-native';
 
 // Given a ref (to keep track of the flashlight's state), turn on the flashlight
-const turnOnFlashlight = (ref) => {
+const turnOnFlashlight = async (ref) => {
     ref.current = true;
     try {
-        Torch.switchState(true);
+        await Torch.switchState(true);
     } catch(err) {
         console.log("NO FLASHLIGHT!")
     }
 }
 
 // Given a ref (to keep track of the flashlight's state), turn off the flashlight
-const turnOffFlashlight = (ref) => {
+const turnOffFlashlight = async (ref) => {
     ref.current = false;
-    try {
-        Torch.switchState(false);
+    try {  
+        await Torch.switchState(false);
     } catch(err) {
         console.log("NO FLASHLIGHT!")
     }
@@ -80,6 +82,51 @@ export const turnOffAlarm = async (alarm) => {
         } catch (err) {
             console.log(err.message)
         }
+    }
+}
+
+const handleCameraPermissions = async () => {
+    let { status } = await Camera.requestPermissionsAsync();
+    if (status === PermissionStatus.GRANTED) {
+        return true;
+    } else if (status === PermissionStatus.UNDETERMINED) {
+        let { status } = await Camera.requestPermissionsAsync();
+        if (status === PermissionStatus.GRANTED) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export const autoRecordStart = async (cameraRef) => {
+    // let perms = await handleCameraPermissions();
+    try {
+        if (cameraRef && cameraRef.current) {
+            let activity = await getAsyncStorageItem(ACTIVITY);
+            let recordings = await getAsyncStorageItem(RECORDINGS); 
+            let video = await cameraRef.current.recordAsync();
+            console.log(video);
+            recordings = recordings ? recordings : [];
+            const windowWidth = Dimensions.get('window').width;
+            const windowHeight = Dimensions.get('window').height;
+            aspect_ratio = windowWidth / windowHeight;
+            recordings.push({ uri: video.uri, type: "video", aspect_ratio: aspect_ratio });
+            activity.numRecordings = recordings.length;
+            await setAsyncStorageItem(ACTIVITY, activity);
+            await setAsyncStorageItem(RECORDINGS, recordings);
+        }
+    } catch (err) {
+        console.log("camera: ", err)
+    }
+}
+
+export const autoRecordStop = (cameraRef) => {
+    try {
+        if (cameraRef && cameraRef.current) {
+            cameraRef.current.stopRecording();
+        }
+    } catch(err) {
+        console.log(err);
     }
 }
 

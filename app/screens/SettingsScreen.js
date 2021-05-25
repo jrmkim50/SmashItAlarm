@@ -7,6 +7,7 @@ import { getSavedPhoneNumber, saveNumberData, savePhoneNumber, getPhoneNumber } 
 import { RECORDINGS, USER_GEN, AUTO_GEN, BADGES } from '../utils/constants';
 import { screenStyle } from '../utils/styles';
 import { clearAsyncStorageKey, getAsyncStorageItem, setAsyncStorageItem, sleep } from '../utils/utils';
+import RNFS from 'react-native-fs';
 
 export default function SettingsScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
@@ -38,18 +39,25 @@ export default function SettingsScreen({ navigation }) {
             { text: "Cancel", style: 'cancel' },
             { text: "Ok", onPress: async () => {
                 try {
-                    let recordings = getAsyncStorageItem(RECORDINGS);
-                    if (recordings && recordings.length > 0) {
-                        setLoading(true);
-                        await sleep(500);
-                        await clearAsyncStorageKey(RECORDINGS);
-                        setSuccess(true);
-                        await sleep(500);
-                        setLoading(false);
-                        setSuccess(false);
-                    } else {
-                        alert("Nothing to delete!")
-                    }
+                    let mainDir = RNFS.MainBundlePath ? RNFS.MainBundlePath : RNFS.DocumentDirectoryPath;
+                    // RNFS.readDir(mainDir).then(result => {
+                    //     for (let key of result) {
+                    //         console.log(key.name)
+                    //     }
+                    // })
+                    let recordings = await getAsyncStorageItem(RECORDINGS);
+                    console.log(mainDir, recordings[0])
+                    // if (recordings && recordings.length > 0) {
+                    //     setLoading(true);
+                    //     await sleep(500);
+                    //     await clearAsyncStorageKey(RECORDINGS);
+                    //     setSuccess(true);
+                    //     await sleep(500);
+                    //     setLoading(false);
+                    //     setSuccess(false);
+                    // } else {
+                    //     alert("Nothing to delete!")
+                    // }
                 } catch(err) {
                     console.log(err.message)
                 }

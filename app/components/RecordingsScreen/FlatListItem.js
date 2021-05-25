@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Share } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, Share, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Video from 'react-native-video';
 import HorizontalLine from '../general/HorizontalLine';
@@ -12,19 +12,27 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
     const [paused, setPaused] = useState(true)
     let data = null;
 
+
     const togglePlay = () => {
         setPaused(!paused);
     }
 
     const onLoad = (response) => {
-        if (response && response.naturalSize && response.naturalSize.orientation === "portrait") {
-            if (response.naturalSize.width > response.naturalSize.height) {
-                setAspect(1/aspect_ratio); 
+        if (Platform.OS === "ios") {
+            console.log(response.naturalSize, aspect_ratio)
+            if (response && response.naturalSize && response.naturalSize.orientation === "portrait") {
+                if (aspect_ratio > 1) {
+                    setAspect(1/aspect_ratio); 
+                }
             }
-        } else if (response && response.naturalSize && response.naturalSize.orientation === "landscape") {
-            if (response.naturalSize.height > response.naturalSize.width) {
-                setAspect(1/aspect_ratio); 
+            if (response && response.naturalSize && response.naturalSize.orientation === "landscape") {
+                if (aspect_ratio < 1) {
+                    setAspect(1/aspect_ratio); 
+                }
             }
+        }
+        if (video && video.current) {
+            video.current.seek(0);
         }
     }
 
