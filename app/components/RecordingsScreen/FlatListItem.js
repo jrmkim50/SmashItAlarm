@@ -19,7 +19,6 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
 
     const onLoad = (response) => {
         if (Platform.OS === "ios") {
-            console.log(response.naturalSize, aspect_ratio)
             if (response && response.naturalSize && response.naturalSize.orientation === "portrait") {
                 if (aspect_ratio > 1) {
                     setAspect(1/aspect_ratio); 
@@ -58,6 +57,7 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
                 <Video ref={video} source={{uri: uri}}
                        style={[styles.data, { aspectRatio: aspect }]}
                        onLoad={onLoad} repeat = {true} resizeMode='contain' paused={paused}
+                       ignoreSilentSwitch = 'ignore'
                 />
             </TouchableOpacity>
         );

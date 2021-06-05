@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator, TextInput } from 'react-native'
 import ActivityWindow from '../components/general/ActivityWindow';
 import OpenRating from '../components/general/OpenRating';
-import Feedback from '../components/SettingsScreen/Feedback';
-import { getSavedPhoneNumber, saveNumberData, savePhoneNumber, getPhoneNumber } from '../utils/alarm';
-import { RECORDINGS, USER_GEN, AUTO_GEN, BADGES } from '../utils/constants';
+import { getSavedPhoneNumber, savePhoneNumber, getPhoneNumber } from '../utils/alarm';
+import { RECORDINGS, USER_GEN, AUTO_GEN, BADGES, EMERGENCY_NUMBER, defaultEmergencyNumber, defaultBadges } from '../utils/constants';
 import { screenStyle } from '../utils/styles';
-import { clearAsyncStorageKey, getAsyncStorageItem, setAsyncStorageItem, sleep } from '../utils/utils';
+import { clearAsyncStorageKey, deleteFile, getAsyncStorageItem, manageAsyncStorage, setAsyncStorageItem, sleep } from '../utils/utils';
 import RNFS from 'react-native-fs';
 
 export default function SettingsScreen({ navigation }) {
@@ -19,13 +18,11 @@ export default function SettingsScreen({ navigation }) {
 
     useEffect(() => {
         getSavedPhoneNumber().then(numberData => {
+            numberData = numberData ? numberData : defaultEmergencyNumber;
             setEmergencyNumber(numberData.number);
             setAutomatically(numberData.auto_generate);
-            sleep(500).then(() => {
-                setLoadingData(false);
-            })
+            setLoadingData(false);
         })
-
         getAsyncStorageItem(BADGES).then(result => {
             let badges = result ? result : defaultBadges;
             badges.checkEmergencyServicesSettings = false;
@@ -39,25 +36,22 @@ export default function SettingsScreen({ navigation }) {
             { text: "Cancel", style: 'cancel' },
             { text: "Ok", onPress: async () => {
                 try {
-                    let mainDir = RNFS.MainBundlePath ? RNFS.MainBundlePath : RNFS.DocumentDirectoryPath;
-                    // RNFS.readDir(mainDir).then(result => {
-                    //     for (let key of result) {
-                    //         console.log(key.name)
-                    //     }
-                    // })
                     let recordings = await getAsyncStorageItem(RECORDINGS);
-                    console.log(mainDir, recordings[0])
-                    // if (recordings && recordings.length > 0) {
-                    //     setLoading(true);
-                    //     await sleep(500);
-                    //     await clearAsyncStorageKey(RECORDINGS);
-                    //     setSuccess(true);
-                    //     await sleep(500);
-                    //     setLoading(false);
-                    //     setSuccess(false);
-                    // } else {
-                    //     alert("Nothing to delete!")
-                    // }
+                    let files = await RNFS.readDir(`${RNFS.DocumentDirectoryPath}/Camera/`);
+                    files.forEach(async file => {
+                        await deleteFile(file.path);
+                    })
+                    if (recordings && recordings.length > 0) {
+                        setLoading(true);
+                        await sleep(500);
+                        await clearAsyncStorageKey(RECORDINGS);
+                        setSuccess(true);
+                        await sleep(500);
+                        setLoading(false);
+                        setSuccess(false);
+                    } else {
+                        alert("Nothing to delete!")
+                    }
                 } catch(err) {
                     console.log(err.message)
                 }
@@ -68,8 +62,8 @@ export default function SettingsScreen({ navigation }) {
     const toggleAutoGeneration = async () => {
         let numberData = await getSavedPhoneNumber();
         numberData.auto_generate = !automatically;
+        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
         setAutomatically(!automatically);
-        await saveNumberData(numberData);
         if (numberData.auto_generate) {
             let number = await getPhoneNumber()
             await savePhoneNumber(number, AUTO_GEN);
@@ -80,7 +74,6 @@ export default function SettingsScreen({ navigation }) {
     const saveNewNumber = async (number) => {
         await savePhoneNumber(number, USER_GEN);
         setEmergencyNumber(number);
-        setAutomatically(false);
         setTempEmergencyNumber(null);
     }
 

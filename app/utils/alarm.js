@@ -6,6 +6,7 @@ import * as RNLocalize from "react-native-localize";
 import { TESTING } from '../config';
 import { RNCamera } from 'react-native-camera';
 import { Dimensions } from 'react-native';
+import RNFS from 'react-native-fs';
 
 // Given a ref (to keep track of the flashlight's state), turn on the flashlight
 const turnOnFlashlight = async (ref) => {
@@ -60,12 +61,12 @@ export const turnOffStrobe = (torchRef, intervalRef) => {
 export const turnOnAlarm = async (alarm) => {
     if (alarm) {
         try {
-            await alarm.playFromPositionAsync(0);
             let activity = await getAsyncStorageItem(ACTIVITY);
             if (!activity.alarmPlayed) {
                 activity.alarmPlayed = true;
                 setAsyncStorageItem(ACTIVITY, activity);
             }
+            await alarm.playFromPositionAsync(0);
         } catch (err) {
             console.log(err.message)
         }
@@ -85,39 +86,41 @@ export const turnOffAlarm = async (alarm) => {
     }
 }
 
-const handleCameraPermissions = async () => {
-    let { status } = await Camera.requestPermissionsAsync();
-    if (status === PermissionStatus.GRANTED) {
-        return true;
-    } else if (status === PermissionStatus.UNDETERMINED) {
-        let { status } = await Camera.requestPermissionsAsync();
-        if (status === PermissionStatus.GRANTED) {
-            return true;
-        }
+const getAspectRatio = (deviceOrientation) => {
+    let portrait = 1;
+    let landscape = 3;
+    if (deviceOrientation === portrait) {
+        return 0.75;
+    } else if (deviceOrientation === landscape) {
+        return 4/3;
     }
-    return false;
 }
 
 export const autoRecordStart = async (cameraRef) => {
-    // let perms = await handleCameraPermissions();
     try {
         if (cameraRef && cameraRef.current) {
-            let activity = await getAsyncStorageItem(ACTIVITY);
-            let recordings = await getAsyncStorageItem(RECORDINGS); 
-            let video = await cameraRef.current.recordAsync();
-            console.log(video);
-            recordings = recordings ? recordings : [];
-            const windowWidth = Dimensions.get('window').width;
-            const windowHeight = Dimensions.get('window').height;
-            aspect_ratio = windowWidth / windowHeight;
-            recordings.push({ uri: video.uri, type: "video", aspect_ratio: aspect_ratio });
-            activity.numRecordings = recordings.length;
-            await setAsyncStorageItem(ACTIVITY, activity);
-            await setAsyncStorageItem(RECORDINGS, recordings);
+            // let temp_files = await RNFS.readDir(`${RNFS.CachesDirectoryPath}/Camera/`);
+            // let files = await RNFS.readDir(`${RNFS.DocumentDirectoryPath}/Camera/`);
+            // console.log(temp_files);
+            // console.log(files);
+            // console.log("========")
+            let { uri, deviceOrientation } = await cameraRef.current.recordAsync({ mute: false, videoBitrate: 0.25 * 1000 * 1000, quality: RNCamera.Constants.VideoQuality['4:3'] });
+            await saveVideo(uri, deviceOrientation);
         }
     } catch (err) {
         console.log("camera: ", err)
     }
+}
+
+const saveVideo = async (uri, deviceOrientation) => {
+    let fileName = uri.split("/").pop()
+    RNFS.moveFile(uri.split("///").pop(), `${RNFS.DocumentDirectoryPath}/Camera/${fileName}`);
+    let recordings = await getAsyncStorageItem(RECORDINGS); 
+    recordings = recordings ? recordings : [];
+    let aspect_ratio = getAspectRatio(deviceOrientation);
+    recordings.push({ uri: fileName, type: "video", aspect_ratio: aspect_ratio });
+    console.log(fileName)
+    await setAsyncStorageItem(RECORDINGS, recordings);
 }
 
 export const autoRecordStop = (cameraRef) => {
@@ -146,7 +149,7 @@ export const getPhoneNumber = async () => {
     let emergency_numbers = require("../assets/emergency_numbers.json");
     let countryCode = await getCountryCode();
     let numbers = emergency_numbers.find(country => country.Country.ISOCode === countryCode);
-    return numbers.Police.All[0] ? numbers.Police.All[0] : "911";
+    return (numbers && numbers.Police && numbers.Police.All && numbers.Police.All[0]) ? numbers.Police.All[0] : "911";
 }
 
 export const getSavedPhoneNumber = async () => {
@@ -159,28 +162,18 @@ export const getSavedPhoneNumber = async () => {
 // feature is on and if it is a new number. If this process was started manually, the auto generate feature will 
 // turn off in the future and we will save the new number
 export const savePhoneNumber = async (number, entity) => {
-    let numberData = {...defaultEmergencyNumber};
-    numberData.number = number;
-
     let savedNumberData = await getSavedPhoneNumber();
-    if (!savedNumberData) {
-        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
-        return;
+    if (entity === AUTO_GEN && savedNumberData.auto_generate && number !== savedNumberData.number) {
+        savedNumberData.number = number;
+        await setAsyncStorageItem(EMERGENCY_NUMBER, savedNumberData);
     }
-    if (entity === AUTO_GEN && savedNumberData.auto_generate && numberData.number !== savedNumberData.number) {
-        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
-    }
-    if (entity === USER_GEN) {
-        numberData.auto_generate = false;
-        await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
+    if (entity === USER_GEN && !savedNumberData.auto_generate) {
+        savedNumberData.number = number;
+        await setAsyncStorageItem(EMERGENCY_NUMBER, savedNumberData);
     }
 }
 
-export const saveNumberData = async (data) => {
-    await setAsyncStorageItem(EMERGENCY_NUMBER, data);
-}
-
-export const initiateCall = async (phoneNumber) => {
+export const initiateCall = async (phoneNumber, isAutoRecord, setIsAutoRecord, cameraRef) => {
     try {
         Linking.openURL("tel:" + phoneNumber);
     } catch(err) {

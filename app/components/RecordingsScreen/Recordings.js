@@ -4,11 +4,12 @@ import { FlatList, Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import FlatListItem from './FlatListItem';
 import { useIsFocused } from "@react-navigation/native";
-import { getAsyncStorageItem, setAsyncStorageItem, sleep } from '../../utils/utils';
+import { deleteFile, getAsyncStorageItem, logAsyncStorage, setAsyncStorageItem, sleep } from '../../utils/utils';
 import { RECORDINGS } from '../../utils/constants';
 import RNFS from 'react-native-fs';
 
 export default function Recordings({ setLoading, setSuccess }) {
+    const [fileNames, setFileNames] = useState(null);
     const [uris, setURIs] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -21,7 +22,14 @@ export default function Recordings({ setLoading, setSuccess }) {
     const refreshData = () => {
         setRefreshing(true);
         getAsyncStorageItem(RECORDINGS).then((recordings) => {
-            setURIs(recordings);
+            let temp_uris = JSON.parse(JSON.stringify(recordings));
+            if (recordings) {
+                recordings.forEach((recording, idx) => {
+                    temp_uris[idx].uri = `${RNFS.DocumentDirectoryPath}/Camera/${recording.uri}`
+                })
+            }
+            setFileNames(recordings);
+            setURIs(temp_uris);
             setRefreshing(false);
         }).catch(err => {
             console.log(err.message);
@@ -38,21 +46,23 @@ export default function Recordings({ setLoading, setSuccess }) {
 
     const confirmDeletion = async (index) => {
         setLoading(true);
-        let tempURIs = [...uris];
-        let uri = tempURIs[index];
+        let tempURIs = JSON.parse(JSON.stringify(uris));
+        let tempFileNames = JSON.parse(JSON.stringify(fileNames));
+        let uri = tempURIs[index].uri;
         const filePath = uri.split('///').pop()
         tempURIs.splice(index, 1);
+        tempFileNames.splice(index, 1);
         setURIs(tempURIs);
+        setFileNames(tempFileNames);
         await sleep(500);
         setSuccess(true);
         await sleep(500);
         setLoading(false);
         setSuccess(false);
         try {
-            if (await RNFS.exists(filePath)) {
-                await RNFS.unlink(filePath)
-            }
-            await setAsyncStorageItem(RECORDINGS, tempURIs);
+            await deleteFile(filePath)
+            await setAsyncStorageItem(RECORDINGS, tempFileNames);
+            await logAsyncStorage()
         } catch(err) {
             console.log(err.message);
         }
