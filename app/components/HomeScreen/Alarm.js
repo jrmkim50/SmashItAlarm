@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, AppState } from 'react-native';
-import { Audio } from 'expo-av';
+import { Player, PlaybackCategories } from '@react-native-community/audio-toolkit';
 import { useState, useEffect, useRef } from 'react';
 import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY, tabBarHeight, EMERGENCY_NUMBER, defaultEmergencyNumber } from '../../utils/constants';
 import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, autoRecordStart, autoRecordStop } from '../../utils/alarm';
@@ -14,7 +14,7 @@ export default function Alarm({ setLoading, setSuccess }) {
     const [phoneNumber, setPhoneNumber] = useState("911");
     const [isAutoRecord, setIsAutoRecord] = useState(false);
 
-    const alarmSource = "../../assets/Alarm-Slow-A2.mp3";
+    const alarmSource = "Alarm-Slow-A2.mp3"; // 
     const torchRef = useRef();
     const intervalRef = useRef();
     const cameraRef = useRef();
@@ -22,19 +22,10 @@ export default function Alarm({ setLoading, setSuccess }) {
 
     useEffect(() => {
         turnOffStrobe(torchRef, intervalRef);
-        Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            allowsRecordingIOS: true
-        }).then(() => {
-            Audio.Sound.createAsync(require(alarmSource), { isLooping: true }).then(({ sound }) => {
-                setSoundState(PAUSED);
-                setAlarm(sound);
-            }).catch(err => {
-                console.log(err.message);
-            })
-        }).catch(err => {
-            console.log(err.message);
-        })
+        let player = new Player(alarmSource, { autoDestroy: false, category: PlaybackCategories.SoloAmbient })
+        player.isLooping = true;
+        setSoundState(PAUSED);
+        setAlarm(player);
         getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber).then(number => {
             setPhoneNumber(number.number);
         });
@@ -61,7 +52,7 @@ export default function Alarm({ setLoading, setSuccess }) {
         return () => {
             if (alarm) {
                 try {
-                    alarm.unloadAsync();
+                    alarm.destroy();
                 } catch (err) {
                     console.log(err.message);
                 }
@@ -72,12 +63,12 @@ export default function Alarm({ setLoading, setSuccess }) {
     useEffect(() => {
         if (soundState === PLAYING) {
             turnOnAlarm(alarm);
-            autoRecordStart(cameraRef)
+            // autoRecordStart(cameraRef)
         } else if (soundState === PAUSED) {
             turnOffAlarm(alarm);
-            if (isAutoRecord) {
-                autoRecordStop(cameraRef);
-            }
+            // if (isAutoRecord) {
+            //     autoRecordStop(cameraRef);
+            // }
         }
     }, [soundState])
 

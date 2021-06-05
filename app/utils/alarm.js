@@ -7,6 +7,7 @@ import { TESTING } from '../config';
 import { RNCamera } from 'react-native-camera';
 import { Dimensions } from 'react-native';
 import RNFS from 'react-native-fs';
+import { MediaStates } from '@react-native-community/audio-toolkit';
 
 // Given a ref (to keep track of the flashlight's state), turn on the flashlight
 const turnOnFlashlight = async (ref) => {
@@ -69,7 +70,8 @@ export const turnOnAlarm = async (alarm) => {
                 activity.alarmPlayed = true;
                 setAsyncStorageItem(ACTIVITY, activity);
             }
-            await alarm.playFromPositionAsync(0);
+            console.log(alarm)
+            alarm.play();
         } catch (err) {
             console.log(err.message)
         }
@@ -79,9 +81,8 @@ export const turnOnAlarm = async (alarm) => {
 export const turnOffAlarm = async (alarm) => {
     if (alarm) {
         try {
-            let { isLoaded } = await alarm.getStatusAsync();
-            if (isLoaded) {
-                await alarm.pauseAsync();
+            if (alarm.state === MediaStates.PLAYING) {
+                alarm.pause();
             }
         } catch (err) {
             console.log(err.message)
