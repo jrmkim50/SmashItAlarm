@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import Torch from 'react-native-torch';
 import { ACTIVITY, AUTO_GEN, COUNTRY_CODE, defaultEmergencyNumber, EMERGENCY_NUMBER, RECORDINGS, USER_GEN } from './constants';
-import { clearAsyncStorageKey, getAsyncStorageItem, getAsyncStorageItemFallback, setAsyncStorageItem } from './utils';
+import { clearAsyncStorageKey, getAsyncStorageItem, getAsyncStorageItemFallback, setAsyncStorageItem, sleep } from './utils';
 import * as RNLocalize from "react-native-localize";
 import { TESTING } from '../config';
 import { RNCamera } from 'react-native-camera';
@@ -30,12 +30,16 @@ const turnOffFlashlight = async (ref) => {
 
 // A function that returns an interval that turns the flashlight on and off
 const strobeBehavior = (ref) => {
+    let count = 0;
     let interval = setInterval(() => {
-        if (ref.current) {
-            turnOffFlashlight(ref); 
-        } else {
-            turnOnFlashlight(ref);
+        if (count != 0) {
+            if (ref.current) {
+                turnOffFlashlight(ref); 
+            } else {
+                turnOnFlashlight(ref);
+            }
         }
+        count++;
     }, 1000);
 
     return interval;
@@ -44,7 +48,6 @@ const strobeBehavior = (ref) => {
 // When you turn on the strobe, you need to turn off the strobe, turn on the flashlight (to account for the interval's delay)
 export const turnOnStrobe = (torchRef, intervalRef) => {
     turnOffStrobe(torchRef, intervalRef);
-    turnOnFlashlight(torchRef);
     let interval = strobeBehavior(torchRef);
     intervalRef.current = interval;
 }
@@ -96,15 +99,16 @@ const getAspectRatio = (deviceOrientation) => {
     }
 }
 
-export const autoRecordStart = async (cameraRef, setIsRecording) => {
+export const autoRecordStart = async (cameraRef) => {
     try {
         if (cameraRef && cameraRef.current) {
-            setIsRecording(true);
-            let { uri, deviceOrientation } = await cameraRef.current.recordAsync({ mute: false, videoBitrate: 0.25 * 1000 * 1000, quality: RNCamera.Constants.VideoQuality['4:3'] });
+            let { uri, deviceOrientation } = await cameraRef.current.recordAsync({ videoBitrate: 0.25 * 1000 * 1000, quality: RNCamera.Constants.VideoQuality['4:3'] });
             await saveVideo(uri, deviceOrientation);
+        } else {
+            throw new Error("No camera yet!")
         }
     } catch (err) {
-        console.log("camera: ", err)
+        throw new Error(err)
     }
 }
 
@@ -119,10 +123,9 @@ const saveVideo = async (uri, deviceOrientation) => {
     await setAsyncStorageItem(RECORDINGS, recordings);
 }
 
-export const autoRecordStop = (cameraRef, setIsRecording) => {
+export const autoRecordStop = (cameraRef) => {
     try {
         if (cameraRef && cameraRef.current) {
-            setIsRecording(false);
             cameraRef.current.stopRecording();
         }
     } catch(err) {

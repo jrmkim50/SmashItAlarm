@@ -18,15 +18,13 @@ export default function Alarm({ setLoading, setSuccess }) {
     const torchRef = useRef();
     const intervalRef = useRef();
     const cameraRef = useRef();
-    const cameraPromiseRef = useRef(new Promise());
     const [appStateVisible, setAppStateVisible] = useState(AppState.currentState);
 
     useEffect(() => {
         turnOffStrobe(torchRef, intervalRef);
         Audio.setAudioModeAsync({
             playsInSilentModeIOS: true,
-            // allowsRecordingIOS: true,
-            // interruptionModeAndroid: INTERRUPTION_MODE_ANDROID_DUCK_OTHERS
+            allowsRecordingIOS: true
         }).then(() => {
             Audio.Sound.createAsync(require(alarmSource), { isLooping: true }).then(({ sound }) => {
                 setSoundState(PAUSED);
@@ -50,22 +48,12 @@ export default function Alarm({ setLoading, setSuccess }) {
         setAppStateVisible(nextAppState);
     };
 
-    const tryRecording = () => {
-        var cameraTry = setInterval(() => {
-            try {
-                autoRecordStart(cameraRef, setIsAutoRecord)
-                clearInterval(cameraTry);
-            } catch(err) {
-                console.log(err);
-            }
-        }, 1000)
-    }
-
     useEffect(() => {
-        if (appStateVisible === "active") {
-            if (!isAutoRecord && soundState === PLAYING) {
-                tryRecording();
-            }
+        if (appStateVisible === "background") {
+            cameraRef.current = null;
+            setSoundState(PAUSED);
+            setStrobeState(PAUSED);
+            setIsAutoRecord(false);
         }
     }, [appStateVisible])
 
@@ -84,11 +72,11 @@ export default function Alarm({ setLoading, setSuccess }) {
     useEffect(() => {
         if (soundState === PLAYING) {
             turnOnAlarm(alarm);
-            tryRecording();
+            autoRecordStart(cameraRef)
         } else if (soundState === PAUSED) {
             turnOffAlarm(alarm);
             if (isAutoRecord) {
-                autoRecordStop(cameraRef, setIsAutoRecord);
+                autoRecordStop(cameraRef);
             }
         }
     }, [soundState])
@@ -151,10 +139,15 @@ export default function Alarm({ setLoading, setSuccess }) {
                     flashMode={RNCamera.Constants.FlashMode.off}
                     type={RNCamera.Constants.Type.back}
                     style={styles.camera}
-                    captureAudio={true}
+                    onRecordingStart={() => {
+                        setIsAutoRecord(true);
+                    }}
+                    onRecordingEnd={() => {
+                        setIsAutoRecord(false);
+                    }}
                 >
                     {({ camera, status, recordAudioPermissionStatus }) => {
-                        if (recordAudioPermissionStatus === 'AUTHORIZED' && 
+                        if (camera && recordAudioPermissionStatus === 'AUTHORIZED' && 
                             status === 'READY') {
                                 cameraRef.current = camera;
                                 return <View></View>
