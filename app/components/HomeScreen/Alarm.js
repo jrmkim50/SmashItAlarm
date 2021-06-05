@@ -2,11 +2,10 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, AppState } from 'react-native';
 import { Audio } from 'expo-av';
 import { useState, useEffect, useRef } from 'react';
-import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY, tabBarHeight } from '../../utils/constants';
-import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, getSavedPhoneNumber, autoRecordStart, autoRecordStop } from '../../utils/alarm';
+import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY, tabBarHeight, EMERGENCY_NUMBER, defaultEmergencyNumber } from '../../utils/constants';
+import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, autoRecordStart, autoRecordStop } from '../../utils/alarm';
 import { RNCamera } from 'react-native-camera';
-import { INTERRUPTION_MODE_ANDROID_DUCK_OTHERS } from 'expo-av/build/Audio';
-import { manageAsyncStorage } from '../../utils/utils';
+import { getAsyncStorageItemFallback, manageAsyncStorage } from '../../utils/utils';
 
 export default function Alarm({ setLoading, setSuccess }) {
     const [alarm, setAlarm] = useState(null);
@@ -19,6 +18,7 @@ export default function Alarm({ setLoading, setSuccess }) {
     const torchRef = useRef();
     const intervalRef = useRef();
     const cameraRef = useRef();
+    const cameraPromiseRef = useRef(new Promise());
     const [appStateVisible, setAppStateVisible] = useState(AppState.currentState);
 
     useEffect(() => {
@@ -37,8 +37,8 @@ export default function Alarm({ setLoading, setSuccess }) {
         }).catch(err => {
             console.log(err.message);
         })
-        getSavedPhoneNumber().then(number => {
-            setPhoneNumber((number && number.number) ? number.number : "911");
+        getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber).then(number => {
+            setPhoneNumber(number.number);
         });
         AppState.addEventListener("change", _handleAppStateChange);
         return () => {
@@ -50,22 +50,21 @@ export default function Alarm({ setLoading, setSuccess }) {
         setAppStateVisible(nextAppState);
     };
 
-    useEffect(() => {
-        if (appStateVisible === "background") {
-            if (isAutoRecord) {
-                setIsAutoRecord(false);
+    const tryRecording = () => {
+        var cameraTry = setInterval(() => {
+            try {
+                autoRecordStart(cameraRef, setIsAutoRecord)
+                clearInterval(cameraTry);
+            } catch(err) {
+                console.log(err);
             }
-        } else if (appStateVisible === "active") {
+        }, 1000)
+    }
+
+    useEffect(() => {
+        if (appStateVisible === "active") {
             if (!isAutoRecord && soundState === PLAYING) {
-                setIsAutoRecord(true);
-                var cameraTry = setInterval(() => {
-                    try {
-                        autoRecordStart(cameraRef)
-                        clearInterval(cameraTry);
-                    } catch(err) {
-                        console.log(err);
-                    }
-                }, 1000)
+                tryRecording();
             }
         }
     }, [appStateVisible])
@@ -84,23 +83,21 @@ export default function Alarm({ setLoading, setSuccess }) {
 
     useEffect(() => {
         if (soundState === PLAYING) {
-            // turnOnAlarm(alarm);
-            setIsAutoRecord(true);
-            autoRecordStart(cameraRef);
+            turnOnAlarm(alarm);
+            tryRecording();
         } else if (soundState === PAUSED) {
-            // turnOffAlarm(alarm);
+            turnOffAlarm(alarm);
             if (isAutoRecord) {
-                autoRecordStop(cameraRef);
+                autoRecordStop(cameraRef, setIsAutoRecord);
             }
-            setIsAutoRecord(false);
         }
     }, [soundState])
 
     useEffect(() => {
         if (strobeState === PLAYING) {
-            // turnOnStrobe(torchRef, intervalRef);
+            turnOnStrobe(torchRef, intervalRef);
         } else {
-            // turnOffStrobe(torchRef, intervalRef);
+            turnOffStrobe(torchRef, intervalRef);
         }
     }, [strobeState])
 

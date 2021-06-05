@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import Torch from 'react-native-torch';
 import { ACTIVITY, AUTO_GEN, COUNTRY_CODE, defaultEmergencyNumber, EMERGENCY_NUMBER, RECORDINGS, USER_GEN } from './constants';
-import { clearAsyncStorageKey, getAsyncStorageItem, setAsyncStorageItem } from './utils';
+import { clearAsyncStorageKey, getAsyncStorageItem, getAsyncStorageItemFallback, setAsyncStorageItem } from './utils';
 import * as RNLocalize from "react-native-localize";
 import { TESTING } from '../config';
 import { RNCamera } from 'react-native-camera';
@@ -96,14 +96,10 @@ const getAspectRatio = (deviceOrientation) => {
     }
 }
 
-export const autoRecordStart = async (cameraRef) => {
+export const autoRecordStart = async (cameraRef, setIsRecording) => {
     try {
         if (cameraRef && cameraRef.current) {
-            // let temp_files = await RNFS.readDir(`${RNFS.CachesDirectoryPath}/Camera/`);
-            // let files = await RNFS.readDir(`${RNFS.DocumentDirectoryPath}/Camera/`);
-            // console.log(temp_files);
-            // console.log(files);
-            // console.log("========")
+            setIsRecording(true);
             let { uri, deviceOrientation } = await cameraRef.current.recordAsync({ mute: false, videoBitrate: 0.25 * 1000 * 1000, quality: RNCamera.Constants.VideoQuality['4:3'] });
             await saveVideo(uri, deviceOrientation);
         }
@@ -123,9 +119,10 @@ const saveVideo = async (uri, deviceOrientation) => {
     await setAsyncStorageItem(RECORDINGS, recordings);
 }
 
-export const autoRecordStop = (cameraRef) => {
+export const autoRecordStop = (cameraRef, setIsRecording) => {
     try {
         if (cameraRef && cameraRef.current) {
+            setIsRecording(false);
             cameraRef.current.stopRecording();
         }
     } catch(err) {
@@ -152,17 +149,12 @@ export const getPhoneNumber = async () => {
     return (numbers && numbers.Police && numbers.Police.All && numbers.Police.All[0]) ? numbers.Police.All[0] : "911";
 }
 
-export const getSavedPhoneNumber = async () => {
-    let savedNumberData = await getAsyncStorageItem(EMERGENCY_NUMBER);
-    return savedNumberData;
-}
-
 // Given an emergency numbers, this function will save that number.
 // If this process was started automatically, the number only saves if the savedNumberData's auto generate
 // feature is on and if it is a new number. If this process was started manually, the auto generate feature will 
 // turn off in the future and we will save the new number
 export const savePhoneNumber = async (number, entity) => {
-    let savedNumberData = await getSavedPhoneNumber();
+    let savedNumberData = await getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber);
     if (entity === AUTO_GEN && savedNumberData.auto_generate && number !== savedNumberData.number) {
         savedNumberData.number = number;
         await setAsyncStorageItem(EMERGENCY_NUMBER, savedNumberData);
@@ -173,7 +165,7 @@ export const savePhoneNumber = async (number, entity) => {
     }
 }
 
-export const initiateCall = async (phoneNumber, isAutoRecord, setIsAutoRecord, cameraRef) => {
+export const initiateCall = async (phoneNumber) => {
     try {
         Linking.openURL("tel:" + phoneNumber);
     } catch(err) {

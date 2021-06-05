@@ -8,30 +8,7 @@ import { cleanCameraCache, cleanRecordings, clearAsyncStorage, logAsyncStorage, 
 // import messaging from '@react-native-firebase/messaging';
 
 export default function App() {
-  // setAsyncStorageItem(INSTALLED_OLD_DO_NOT_USE, { installDate: 1621136883407, asked: true })
   useEffect(() => {
-    // let fcmUnsubscribe = null;
-    // messaging().requestPermission().then(authStatus => {
-    //   if (authStatus === messaging.AuthorizationStatus.AUTHORIZED || authStatus === messaging.AuthorizationStatus.PROVISIONAL) {
-    //     console.log("remote registered: ", messaging().isDeviceRegisteredForRemoteMessages)
-    //     console.log("auto init: ", messaging().isAutoInitEnabled)
-
-    //     messaging().getToken().then(token => {
-    //       console.log("token: ", token)
-    //     })
-
-    //     fcmUnsubscribe = messaging().onMessage(async remoteMessage => {
-    //       console.warn("message when app opening...", remoteMessage)
-    //     });
-
-    //     messaging().onTokenRefresh(token => {
-    //       console.log(token)
-    //     })
-    //   }
-    // }).catch(err => {
-    //   console.log(err)
-    // })
-
     manageAsyncStorage().then(() => {
       analyzeInstalledData().then(toAsk => {
         if (toAsk) {
@@ -43,8 +20,6 @@ export default function App() {
       });
       cleanCameraCache();
     })
-
-    // return fcmUnsubscribe;
   }, [])
 
   return (

@@ -12,7 +12,7 @@ export const sleep = (ms) => {
     })
 }
 
-const getAsyncStorageItemFallback = async (key, fallback) => {
+export const getAsyncStorageItemFallback = async (key, fallback) => {
     try {
         let obj = await AsyncStorage.getItem(key)
         if (!obj) {
@@ -98,7 +98,7 @@ export const manageAsyncStorage = async () => {
             if (oldInstalled.alarm && !activity.alarmPlayed) {
                 activity.alarmPlayed = true;
             }
-            clearAsyncStorageKey(INSTALLED_OLD_DO_NOT_USE);
+            await clearAsyncStorageKey(INSTALLED_OLD_DO_NOT_USE);
         }
         if (newInstalled.rated && newInstalled.timesAsked === 0) {
             newInstalled.timesAsked = 1;
@@ -107,13 +107,13 @@ export const manageAsyncStorage = async () => {
         if (activity.numRecordings) {
             delete activity.numRecordings;
         }
-        setAsyncStorageItem(INSTALLED, newInstalled);
-        setAsyncStorageItem(ACTIVITY, activity);
-        setAsyncStorageItem(EMERGENCY_NUMBER, emergencyNumber);
-        setAsyncStorageItem(BADGES, badges);
-        setAsyncStorageItem(TO_CLEAN, toClean);
+        await setAsyncStorageItem(INSTALLED, newInstalled);
+        await setAsyncStorageItem(ACTIVITY, activity);
+        await setAsyncStorageItem(EMERGENCY_NUMBER, emergencyNumber);
+        await setAsyncStorageItem(BADGES, badges);
+        await setAsyncStorageItem(TO_CLEAN, toClean);
+        await logAsyncStorage();
     }
-    await logAsyncStorage();
 }
 
 export const cleanRecordings = async () => {

@@ -6,24 +6,16 @@ import { clearAsyncStorageKey, elapsedToDays, getAsyncStorageItem, setAsyncStora
 const validateInstallation = (installed) => {
     let installElapsed = Date.now() - installed.installDate; 
     if (installed.timesAsked === 0) {
-        if (elapsedToDays(installElapsed) >= MIN_INSTALL_TIME) {
-            return true;
-        }
+        return elapsedToDays(installElapsed) >= MIN_INSTALL_TIME
     } else {
         let lastAskedElapsed = Date.now() - installed.lastAsked;
-        if (!installed.rated && installed.timesAsked < 3 && elapsedToDays(lastAskedElapsed) >= MIN_RATE_ASK_TIME) {
-            return true;
-        }
+        return (!installed.rated && installed.timesAsked < 3 && elapsedToDays(lastAskedElapsed) >= MIN_RATE_ASK_TIME) 
     }
-    return false;
 }
 
 // Given an object of format activity (see constants.js), returns whether the data fits criteria to ask for a rating
 const validateActivity = (activity) => {
-    if (activity.alarmPlayed) {
-        return true;
-    }
-    return false;
+    return activity.alarmPlayed;
 }
 
 // Given an installed object and activity, returns whether those statuses warrant asking for rating
@@ -38,10 +30,7 @@ export const analyzeInstalledData = async () => {
     try {
         let installed = await getAsyncStorageItem(INSTALLED);
         let activity = await getAsyncStorageItem(ACTIVITY);
-        if (checkActivity(installed, activity)) {
-            return true;
-        }
-        return false;
+        return checkActivity(installed, activity);
     } catch (err) {
         console.log(err.message);
         return false;

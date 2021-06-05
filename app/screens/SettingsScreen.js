@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator, TextInput } from 'react-native'
 import ActivityWindow from '../components/general/ActivityWindow';
 import OpenRating from '../components/general/OpenRating';
-import { getSavedPhoneNumber, savePhoneNumber, getPhoneNumber } from '../utils/alarm';
+import { savePhoneNumber, getPhoneNumber } from '../utils/alarm';
 import { RECORDINGS, USER_GEN, AUTO_GEN, BADGES, EMERGENCY_NUMBER, defaultEmergencyNumber, defaultBadges } from '../utils/constants';
 import { screenStyle } from '../utils/styles';
-import { clearAsyncStorageKey, deleteFile, getAsyncStorageItem, manageAsyncStorage, setAsyncStorageItem, sleep } from '../utils/utils';
+import { clearAsyncStorageKey, deleteFile, getAsyncStorageItem, getAsyncStorageItemFallback, manageAsyncStorage, setAsyncStorageItem, sleep } from '../utils/utils';
 import RNFS from 'react-native-fs';
 
 export default function SettingsScreen({ navigation }) {
@@ -17,8 +17,7 @@ export default function SettingsScreen({ navigation }) {
     const [automatically, setAutomatically] = useState(true);
 
     useEffect(() => {
-        getSavedPhoneNumber().then(numberData => {
-            numberData = numberData ? numberData : defaultEmergencyNumber;
+        getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber).then(numberData => {
             setEmergencyNumber(numberData.number);
             setAutomatically(numberData.auto_generate);
             setLoadingData(false);
@@ -60,7 +59,7 @@ export default function SettingsScreen({ navigation }) {
     }
 
     const toggleAutoGeneration = async () => {
-        let numberData = await getSavedPhoneNumber();
+        let numberData = await getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber);
         numberData.auto_generate = !automatically;
         await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
         setAutomatically(!automatically);
