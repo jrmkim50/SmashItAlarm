@@ -116,11 +116,9 @@ export const autoRecordStart = async (cameraRef) => {
 const saveVideo = async (uri, deviceOrientation) => {
     let fileName = uri.split("/").pop()
     RNFS.moveFile(uri.split("///").pop(), `${RNFS.DocumentDirectoryPath}/Camera/${fileName}`);
-    let recordings = await getAsyncStorageItem(RECORDINGS); 
-    recordings = recordings ? recordings : [];
+    let recordings = await getAsyncStorageItemFallback(RECORDINGS, []); 
     let aspect_ratio = getAspectRatio(deviceOrientation);
     recordings.push({ uri: fileName, type: "video", aspect_ratio: aspect_ratio });
-    console.log(fileName)
     await setAsyncStorageItem(RECORDINGS, recordings);
 }
 

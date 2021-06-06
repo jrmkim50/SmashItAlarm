@@ -5,6 +5,7 @@ import { ACCEPT_RATING, DECLINE_RATING, INSTALLED } from '../../utils/constants'
 import { getAsyncStorageItem, setAsyncStorageItem } from '../../utils/utils';
 
 const openStore = (installed) => {
+    recordData(installed, ACCEPT_RATING);
     const iosURL = APPLE_STORE_URL;
     const androidURL = `https://play.google.com/store/apps/details?id=${GOOGLE_PACKAGE_NAME}`
     if (Platform.OS === 'ios') {
@@ -12,7 +13,6 @@ const openStore = (installed) => {
     } else {
         Linking.openURL(androidURL).catch((err) => alert('Please check for Google Play Store'));
     }
-    recordData(installed, ACCEPT_RATING);
 }
 
 const recordData = (installed, action) => {

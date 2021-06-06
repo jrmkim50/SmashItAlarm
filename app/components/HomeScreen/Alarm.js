@@ -14,7 +14,7 @@ export default function Alarm({ setLoading, setSuccess }) {
     const [phoneNumber, setPhoneNumber] = useState("911");
     const [isAutoRecord, setIsAutoRecord] = useState(false);
 
-    const alarmSource = "Alarm-Slow-A2.mp3"; // 
+    const alarmSource = "Alarm-Slow-A2.mp3"; 
     const torchRef = useRef();
     const intervalRef = useRef();
     const cameraRef = useRef();

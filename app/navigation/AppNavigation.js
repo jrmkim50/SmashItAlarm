@@ -6,7 +6,7 @@ import { Metrics } from '../themes';
 import HomeStackComponent from './HomeStackComponent';
 import RecordingsStackComponent from './RecordingsStackComponent';
 import SettingsScreen from '../screens/SettingsScreen';
-import { getAsyncStorageItem, setAsyncStorageItem } from '../utils/utils';
+import { getAsyncStorageItem, getAsyncStorageItemFallback, setAsyncStorageItem } from '../utils/utils';
 import { BADGES, defaultBadges } from '../utils/constants';
 
 const TabNav = createBottomTabNavigator();
@@ -19,8 +19,7 @@ const TAB_NAMES = {
 export default function AppNavigation() {
     const [tabBarBadge, setTabBarBadge] = useState(0)
     useEffect(() => {
-        getAsyncStorageItem(BADGES).then(result => {
-            let badges = result ? result : {...defaultBadges};
+        getAsyncStorageItemFallback(BADGES, defaultBadges).then(badges => {
             if (badges.checkEmergencyServicesSettings) {
                 setTabBarBadge(1);
             }

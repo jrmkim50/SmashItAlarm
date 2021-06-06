@@ -22,8 +22,7 @@ export default function SettingsScreen({ navigation }) {
             setAutomatically(numberData.auto_generate);
             setLoadingData(false);
         })
-        getAsyncStorageItem(BADGES).then(result => {
-            let badges = result ? result : defaultBadges;
+        getAsyncStorageItemFallback(BADGES, defaultBadges).then(result => {
             badges.checkEmergencyServicesSettings = false;
             navigation.setOptions({ tabBarBadge: 0 })
             setAsyncStorageItem(BADGES, badges);
@@ -35,12 +34,12 @@ export default function SettingsScreen({ navigation }) {
             { text: "Cancel", style: 'cancel' },
             { text: "Ok", onPress: async () => {
                 try {
-                    let recordings = await getAsyncStorageItem(RECORDINGS);
+                    let recordings = await getAsyncStorageItemFallback(RECORDINGS, []);
                     let files = await RNFS.readDir(`${RNFS.DocumentDirectoryPath}/Camera/`);
                     files.forEach(async file => {
                         await deleteFile(file.path);
                     })
-                    if (recordings && recordings.length > 0) {
+                    if (recordings.length > 0) {
                         setLoading(true);
                         await sleep(500);
                         await clearAsyncStorageKey(RECORDINGS);

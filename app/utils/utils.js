@@ -12,18 +12,6 @@ export const sleep = (ms) => {
     })
 }
 
-export const getAsyncStorageItemFallback = async (key, fallback) => {
-    try {
-        let obj = await AsyncStorage.getItem(key)
-        if (!obj) {
-            return fallback;
-        }
-        return JSON.parse(obj);
-    } catch (e) {
-        throw new Error(e.message);
-    }
-}
-
 export const getAsyncStorageItem = async (key) => {
     try {
         let obj = await AsyncStorage.getItem(key)
@@ -31,6 +19,18 @@ export const getAsyncStorageItem = async (key) => {
             return null;
         }
         return JSON.parse(obj);
+    } catch (e) {
+        throw new Error(e.message);
+    }
+}
+
+export const getAsyncStorageItemFallback = async (key, fallback) => {
+    try {
+        let obj = await getAsyncStorageItem(key)
+        if (!obj) {
+            return fallback;
+        }
+        return obj;
     } catch (e) {
         throw new Error(e.message);
     }
@@ -73,13 +73,6 @@ export const logAsyncStorage = async () => {
 }
 
 export const manageAsyncStorage = async () => {
-    /* Some object outlines
-     * installed = { installDate, rated, lastAsked, timesAsked }
-     * activity = { numRecordings, alarmPlayed }
-     * recordings = [ { uri, type, aspect_ratio } ]
-     * EMERGENCY_NUMBER = { number, auto-generate (true/false) }
-     * badges = { checkEmergencyServicesSettings }
-     */
     let toClean = await getAsyncStorageItemFallback(TO_CLEAN, defaultToClean);
     if (toClean.cleanAsyncStorage) {
         toClean.cleanAsyncStorage = false;
@@ -121,10 +114,9 @@ export const cleanRecordings = async () => {
     if (toClean.cleanRecordings || !('cleanRecordings' in toClean)) {
         toClean.cleanRecordings = false;
         let recordings = await getAsyncStorageItem(RECORDINGS);
-        for (let idx = 0; idx < recordings.length; idx++) {
-            let fileName = recordings[idx].uri.split("/").pop();
-            recordings[idx].uri = fileName;
-        }
+        recordings = recordings.map(recording => {
+            return {...recording, uri: recording.uri.split("/").pop()};
+        })
         await setAsyncStorageItem(TO_CLEAN, toClean);
         await setAsyncStorageItem(RECORDINGS, recordings)
     }

@@ -24,8 +24,8 @@ export default function Recordings({ setLoading, setSuccess }) {
         getAsyncStorageItem(RECORDINGS).then((recordings) => {
             let temp_uris = JSON.parse(JSON.stringify(recordings));
             if (recordings) {
-                recordings.forEach((recording, idx) => {
-                    temp_uris[idx].uri = `${RNFS.DocumentDirectoryPath}/Camera/${recording.uri}`
+                temp_uris =  recordings.map(recording => {
+                    return {...recording, uri: `${RNFS.DocumentDirectoryPath}/Camera/${recording.uri}`};
                 })
             }
             setFileNames(recordings);
@@ -52,13 +52,6 @@ export default function Recordings({ setLoading, setSuccess }) {
         const filePath = uri.split('///').pop()
         tempURIs.splice(index, 1);
         tempFileNames.splice(index, 1);
-        setURIs(tempURIs);
-        setFileNames(tempFileNames);
-        await sleep(500);
-        setSuccess(true);
-        await sleep(500);
-        setLoading(false);
-        setSuccess(false);
         try {
             await deleteFile(filePath)
             await setAsyncStorageItem(RECORDINGS, tempFileNames);
@@ -66,6 +59,13 @@ export default function Recordings({ setLoading, setSuccess }) {
         } catch(err) {
             console.log(err.message);
         }
+        setURIs(tempURIs);
+        setFileNames(tempFileNames);
+        await sleep(500);
+        setSuccess(true);
+        await sleep(500);
+        setLoading(false);
+        setSuccess(false);
     }
 
     const renderItem = ({ item, index }) => {

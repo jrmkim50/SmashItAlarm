@@ -12,7 +12,6 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
     const [paused, setPaused] = useState(true)
     let data = null;
 
-
     const togglePlay = () => {
         setPaused(!paused);
     }
@@ -43,6 +42,10 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
         }
     }
 
+    const deleteData = async () => {
+        deleteAt(index);
+    }
+
     if (type === "image") {
         data = (
             <TouchableOpacity activeOpacity={1} style={styles.dataContainer} onLongPress={share}>
@@ -70,7 +73,7 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
                 <TouchableOpacity onPress={share}>
                     <Ionicons name="share-outline" size={Metrics.icons.medium} color="green"/>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteAt(index)}>
+                <TouchableOpacity onPress={deleteData}>
                     <Ionicons name="trash" size={Metrics.icons.medium} color="red"/>
                 </TouchableOpacity>
             </View>
