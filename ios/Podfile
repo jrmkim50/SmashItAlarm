@@ -18,6 +18,5 @@ target 'smashitalarm' do
   #     flipper_post_install(installer)
   #   end
   # end
-  pod 'ReactNativeAudioToolkit', :path => '../node_modules/@react-native-community/audio-toolkit'
 
 end

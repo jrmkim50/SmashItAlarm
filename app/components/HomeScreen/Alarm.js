@@ -1,23 +1,26 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, AppState } from 'react-native';
-import { Player, PlaybackCategories } from '@react-native-community/audio-toolkit';
+import React, { useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, AppState, ActivityIndicator } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
-import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY, tabBarHeight, EMERGENCY_NUMBER, defaultEmergencyNumber } from '../../utils/constants';
+import { PLAYING, PAUSED, LOADING, EMERGENCY_NUMBER, defaultEmergencyNumber } from '../../utils/constants';
 import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, autoRecordStart, autoRecordStop } from '../../utils/alarm';
 import { RNCamera } from 'react-native-camera';
-import { getAsyncStorageItemFallback, manageAsyncStorage } from '../../utils/utils';
-import { useCallback } from 'react';
+import { getAsyncStorageItemFallback } from '../../utils/utils';
+import TrackPlayer from 'react-native-track-player';
+
+
 
 const PendingView = () => (
     <View
       style={{
         flex: 1,
-        backgroundColor: 'lightgreen',
+        width: "100%",
         justifyContent: 'center',
         alignItems: 'center',
+        textAlign: 'center'
       }}
     >
-      <Text>Waiting For Camera</Text>
+      <Text style={{ color: 'white' }}>Camera</Text>
+      <ActivityIndicator style={{ marginTop: 10 }} color="#0000ff"/>
     </View>
   );
 
@@ -29,7 +32,7 @@ export default function Alarm() {
     const [isAutoRecord, setIsAutoRecord] = useState(false);
     const [isCameraReady, setIsCameraReady] = useState(false);
 
-    const alarmSource = "Alarm-Slow-A2.mp3"; 
+    const alarmSource = "../../assets/Alarm-Slow-A2.mp3"; 
     const torchRef = useRef();
     const intervalRef = useRef();
     const cameraRef = useRef();
@@ -38,10 +41,19 @@ export default function Alarm() {
     useEffect(() => {
         async function prepare() {
             turnOffStrobe(torchRef, intervalRef);
-            let player = new Player(alarmSource, { autoDestroy: false, category: PlaybackCategories.SoloAmbient })
-            player.isLooping = true;
+            await TrackPlayer.setupPlayer({
+                iosCategory: 'playAndRecord'
+            })
+            const track = {
+                id: 'Alarm',
+                url: require(alarmSource), // Load media from the app bundle
+                title: 'Alarm',
+                duration: 10
+            };
+            await TrackPlayer.add(track)
+            TrackPlayer.setRepeatMode(TrackPlayer.REPEAT_TRACK)
             setSoundState(PAUSED);
-            setAlarm(player);
+            setAlarm(TrackPlayer);
             const number = await getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber);
             setPhoneNumber(number.number);
             AppState.addEventListener("change", _handleAppStateChange);
@@ -85,7 +97,7 @@ export default function Alarm() {
     useEffect(() => {
         if (soundState === PLAYING) {
             turnOnAlarm(alarm);
-            isAutoRecord(true);
+            setIsAutoRecord(true);
         } else if (soundState === PAUSED) {
             turnOffAlarm(alarm);
             if (isAutoRecord) {

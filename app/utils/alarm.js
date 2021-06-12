@@ -1,13 +1,10 @@
 import * as Linking from 'expo-linking';
 import Torch from 'react-native-torch';
-import { ACTIVITY, AUTO_GEN, COUNTRY_CODE, defaultEmergencyNumber, EMERGENCY_NUMBER, RECORDINGS, USER_GEN } from './constants';
-import { clearAsyncStorageKey, getAsyncStorageItem, getAsyncStorageItemFallback, setAsyncStorageItem, sleep } from './utils';
+import { ACTIVITY, AUTO_GEN, defaultEmergencyNumber, EMERGENCY_NUMBER, RECORDINGS, USER_GEN } from './constants';
+import { getAsyncStorageItem, getAsyncStorageItemFallback, setAsyncStorageItem, sleep } from './utils';
 import * as RNLocalize from "react-native-localize";
-import { TESTING } from '../config';
 import { RNCamera } from 'react-native-camera';
-import { Dimensions } from 'react-native';
 import RNFS from 'react-native-fs';
-import { MediaStates } from '@react-native-community/audio-toolkit';
 
 // Given a ref (to keep track of the flashlight's state), turn on the flashlight
 const turnOnFlashlight = async (ref) => {
@@ -70,8 +67,7 @@ export const turnOnAlarm = async (alarm) => {
                 activity.alarmPlayed = true;
                 setAsyncStorageItem(ACTIVITY, activity);
             }
-            console.log(alarm)
-            alarm.play();
+            alarm.startPlayer();
         } catch (err) {
             console.log(err.message)
         }
