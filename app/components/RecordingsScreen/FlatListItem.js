@@ -8,7 +8,7 @@ import { Metrics } from '../../themes';
 export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt }) {
 
     const video = useRef();
-    const [aspect, setAspect] = useState(aspect_ratio);
+    // const [aspect, setAspect] = useState(aspect_ratio);
     const [paused, setPaused] = useState(true)
     let data = null;
 
@@ -17,18 +17,18 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
     }
 
     const onLoad = (response) => {
-        if (Platform.OS === "ios") {
-            if (response && response.naturalSize && response.naturalSize.orientation === "portrait") {
-                if (aspect_ratio > 1) {
-                    setAspect(1/aspect_ratio); 
-                }
-            }
-            if (response && response.naturalSize && response.naturalSize.orientation === "landscape") {
-                if (aspect_ratio < 1) {
-                    setAspect(1/aspect_ratio); 
-                }
-            }
-        }
+        // if (Platform.OS === "ios") {
+        //     if (response && response.naturalSize && response.naturalSize.orientation === "portrait") {
+        //         if (aspect_ratio > 1) {
+        //             setAspect(1/aspect_ratio); 
+        //         }
+        //     }
+        //     if (response && response.naturalSize && response.naturalSize.orientation === "landscape") {
+        //         if (aspect_ratio < 1) {
+        //             setAspect(1/aspect_ratio); 
+        //         }
+        //     }
+        // }
         if (video && video.current) {
             video.current.seek(0);
         }
@@ -58,7 +58,7 @@ export default function FlatListItem({ uri, type, aspect_ratio, index, deleteAt 
         data = (
             <TouchableOpacity onPress={togglePlay} style={styles.dataContainer} onLongPress={share}>
                 <Video ref={video} source={{uri: uri}}
-                       style={[styles.data, { aspectRatio: aspect }]}
+                       style={[styles.data, { aspectRatio: aspect_ratio }]}
                        onLoad={onLoad} repeat = {true} resizeMode='contain' paused={paused}
                        ignoreSilentSwitch = 'ignore'
                 />

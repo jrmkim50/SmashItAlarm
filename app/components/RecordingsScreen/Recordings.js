@@ -19,21 +19,18 @@ export default function Recordings({ setLoading, setSuccess }) {
         refreshData();
     }, [isFocused])
 
-    const refreshData = () => {
+    const refreshData = async () => {
         setRefreshing(true);
-        getAsyncStorageItem(RECORDINGS).then((recordings) => {
-            let temp_uris = JSON.parse(JSON.stringify(recordings));
-            if (recordings) {
-                temp_uris =  recordings.map(recording => {
-                    return {...recording, uri: `${RNFS.DocumentDirectoryPath}/Camera/${recording.uri}`};
-                })
-            }
-            setFileNames(recordings);
-            setURIs(temp_uris);
-            setRefreshing(false);
-        }).catch(err => {
-            console.log(err.message);
-        })
+        const recordings = await getAsyncStorageItem(RECORDINGS)
+        let temp_uris = JSON.parse(JSON.stringify(recordings));
+        if (recordings) {
+            temp_uris =  recordings.map(recording => {
+                return {...recording, uri: `${RNFS.DocumentDirectoryPath}/Camera/${recording.uri}`};
+            })
+        }
+        setFileNames(recordings);
+        setURIs(temp_uris);
+        setRefreshing(false);
     }
 
     const deleteAt = async (index) => {
@@ -48,7 +45,7 @@ export default function Recordings({ setLoading, setSuccess }) {
         setLoading(true);
         let tempURIs = JSON.parse(JSON.stringify(uris));
         let tempFileNames = JSON.parse(JSON.stringify(fileNames));
-        let uri = tempURIs[index].uri;
+        const uri = tempURIs[index].uri;
         const filePath = uri.split('///').pop()
         tempURIs.splice(index, 1);
         tempFileNames.splice(index, 1);
@@ -74,11 +71,15 @@ export default function Recordings({ setLoading, setSuccess }) {
                              index = {index} deleteAt = {deleteAt}/>;
     }
 
+    const keyExtractor = (item) => {
+        return item.uri;
+    }
+
     return (
         <FlatList style={{ margin: 10, width: '95%' }} 
                   data={uris} 
                   renderItem={renderItem} 
-                  keyExtractor = {(item) => item.uri}
+                  keyExtractor = {keyExtractor}
                   refreshing={refreshing}
                   onRefresh={refreshData}
         >

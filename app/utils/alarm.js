@@ -133,20 +133,13 @@ export const autoRecordStop = (cameraRef) => {
 }
 
 // Gives either the current country code or defaults to US
-const getCountryCode = async () => {
-    try {
-        let countryCode = RNLocalize.getCountry();
-        return countryCode;
-    } catch(err) {
-        console.log(err);
-        let lastCountryCode = "US";
-        return lastCountryCode;
-    }
+const getCountryCode = () => {
+    return RNLocalize.getCountry();
 }
 
-export const getPhoneNumber = async () => {
+export const getPhoneNumber = () => {
     let emergency_numbers = require("../assets/emergency_numbers.json");
-    let countryCode = await getCountryCode();
+    let countryCode = getCountryCode();
     let numbers = emergency_numbers.find(country => country.Country.ISOCode === countryCode);
     return (numbers && numbers.Police && numbers.Police.All && numbers.Police.All[0]) ? numbers.Police.All[0] : "911";
 }

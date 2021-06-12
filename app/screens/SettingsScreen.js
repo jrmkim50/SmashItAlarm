@@ -63,7 +63,7 @@ export default function SettingsScreen({ navigation }) {
         await setAsyncStorageItem(EMERGENCY_NUMBER, numberData);
         setAutomatically(!automatically);
         if (numberData.auto_generate) {
-            let number = await getPhoneNumber()
+            let number = getPhoneNumber()
             await savePhoneNumber(number, AUTO_GEN);
             setEmergencyNumber(number)
         }

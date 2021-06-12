@@ -6,13 +6,28 @@ import { PLAYING, PAUSED, LOADING, RECORDINGS, ACTIVITY, tabBarHeight, EMERGENCY
 import { turnOnStrobe, turnOffStrobe, initiateCall, turnOnAlarm, turnOffAlarm, autoRecordStart, autoRecordStop } from '../../utils/alarm';
 import { RNCamera } from 'react-native-camera';
 import { getAsyncStorageItemFallback, manageAsyncStorage } from '../../utils/utils';
+import { useCallback } from 'react';
 
-export default function Alarm({ setLoading, setSuccess }) {
+const PendingView = () => (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: 'lightgreen',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <Text>Waiting For Camera</Text>
+    </View>
+  );
+
+export default function Alarm() {
     const [alarm, setAlarm] = useState(null);
     const [soundState, setSoundState] = useState(LOADING);
     const [strobeState, setStrobeState] = useState(PAUSED);
     const [phoneNumber, setPhoneNumber] = useState("911");
     const [isAutoRecord, setIsAutoRecord] = useState(false);
+    const [isCameraReady, setIsCameraReady] = useState(false);
 
     const alarmSource = "Alarm-Slow-A2.mp3"; 
     const torchRef = useRef();
@@ -21,15 +36,17 @@ export default function Alarm({ setLoading, setSuccess }) {
     const [appStateVisible, setAppStateVisible] = useState(AppState.currentState);
 
     useEffect(() => {
-        turnOffStrobe(torchRef, intervalRef);
-        let player = new Player(alarmSource, { autoDestroy: false, category: PlaybackCategories.SoloAmbient })
-        player.isLooping = true;
-        setSoundState(PAUSED);
-        setAlarm(player);
-        getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber).then(number => {
+        async function prepare() {
+            turnOffStrobe(torchRef, intervalRef);
+            let player = new Player(alarmSource, { autoDestroy: false, category: PlaybackCategories.SoloAmbient })
+            player.isLooping = true;
+            setSoundState(PAUSED);
+            setAlarm(player);
+            const number = await getAsyncStorageItemFallback(EMERGENCY_NUMBER, defaultEmergencyNumber);
             setPhoneNumber(number.number);
-        });
-        AppState.addEventListener("change", _handleAppStateChange);
+            AppState.addEventListener("change", _handleAppStateChange);
+        }
+        prepare();
         return () => {
             AppState.removeEventListener("change", _handleAppStateChange);
         };
@@ -42,33 +59,38 @@ export default function Alarm({ setLoading, setSuccess }) {
     useEffect(() => {
         if (appStateVisible === "background") {
             cameraRef.current = null;
-            setSoundState(PAUSED);
-            setStrobeState(PAUSED);
             setIsAutoRecord(false);
+            setIsCameraReady(false);
+        } else if (appStateVisible === "active") {
+            if (soundState === PLAYING && !isAutoRecord) {
+                setIsAutoRecord(true);
+            }
         }
     }, [appStateVisible])
 
     useEffect(() => {
         return () => {
             if (alarm) {
-                try {
-                    alarm.destroy();
-                } catch (err) {
-                    console.log(err.message);
-                }
+                alarm.destroy();
             }
         }
     }, [alarm])
 
     useEffect(() => {
+        if (isCameraReady && isAutoRecord) {
+            autoRecordStart(cameraRef)
+        }
+    }, [isCameraReady, isAutoRecord])
+
+    useEffect(() => {
         if (soundState === PLAYING) {
             turnOnAlarm(alarm);
-            // autoRecordStart(cameraRef)
+            isAutoRecord(true);
         } else if (soundState === PAUSED) {
             turnOffAlarm(alarm);
-            // if (isAutoRecord) {
-            //     autoRecordStop(cameraRef);
-            // }
+            if (isAutoRecord) {
+                autoRecordStop(cameraRef);
+            }
         }
     }, [soundState])
 
@@ -92,24 +114,38 @@ export default function Alarm({ setLoading, setSuccess }) {
         }
     }
 
+    const callNumber = useCallback(() => {
+        initiateCall(phoneNumber)
+    }, [phoneNumber, initiateCall])
+
+    const toggleStrobe = useCallback(() => {
+        setStrobeState(strobe => strobe === PLAYING ? PAUSED : PLAYING);
+    }, [setStrobeState])
+
+    const onRecordingEnd = useCallback(() => {
+        setIsAutoRecord(false);
+    }, [setIsAutoRecord])
+
+    const onCameraReady = useCallback(() => {
+        setIsCameraReady(true);
+    })
+
     return (
         <View style={styles.container}>
             <TouchableOpacity onPress={onPress}
                 style={soundState === LOADING ? 
-                        [styles.alarmButton, styles.loading, styles.warning] :
-                        [styles.alarmButton, styles.warning]}
+                       [styles.alarmButton, styles.loading, styles.warning] :
+                       [styles.alarmButton, styles.warning]}
                 disabled={soundState === LOADING}>
                 <Text style={styles.text}>{(soundState === PAUSED || soundState === LOADING) ? "Activate Alarm!" : "Stop Alarm!"}</Text>
             </TouchableOpacity>
             {soundState === PLAYING &&
-                <TouchableOpacity style={[styles.alarmButton, styles.secondary]} onPress={() => initiateCall(phoneNumber)}>
+                <TouchableOpacity style={[styles.alarmButton, styles.secondary]} onPress={callNumber}>
                     <Text style={styles.text}>Emergency Services</Text>
                 </TouchableOpacity>
             }
             {soundState === PLAYING &&
-                <TouchableOpacity style={[styles.smallButton, styles.secondary]} onPress={strobeState === PLAYING ? 
-                                                                                            () => setStrobeState(PAUSED) : 
-                                                                                            () => setStrobeState(PLAYING)}>
+                <TouchableOpacity style={[styles.smallButton, styles.secondary]} onPress={toggleStrobe}>
                     <Text style={styles.smallText}>{strobeState === PLAYING ? "Turn off Strobe" : "Turn on Strobe"}</Text>
                 </TouchableOpacity>
             }
@@ -130,20 +166,16 @@ export default function Alarm({ setLoading, setSuccess }) {
                     flashMode={RNCamera.Constants.FlashMode.off}
                     type={RNCamera.Constants.Type.back}
                     style={styles.camera}
-                    onRecordingStart={() => {
-                        setIsAutoRecord(true);
-                    }}
-                    onRecordingEnd={() => {
-                        setIsAutoRecord(false);
-                    }}
+                    onRecordingEnd={onRecordingEnd}
+                    onCameraReady={onCameraReady}
                 >
                     {({ camera, status, recordAudioPermissionStatus }) => {
                         if (camera && recordAudioPermissionStatus === 'AUTHORIZED' && 
                             status === 'READY') {
                                 cameraRef.current = camera;
-                                return <View></View>
+                                return null
                         } else {
-                            return <View><Text>Please allow permissions to use auto-record functionality</Text></View>
+                            return <PendingView/>
                         }
                     }}
                 </RNCamera>

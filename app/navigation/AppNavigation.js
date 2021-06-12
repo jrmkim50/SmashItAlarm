@@ -16,23 +16,25 @@ const TAB_NAMES = {
     "recordings": "RecordingsTab"
 }
 
-export default function AppNavigation() {
+export default function AppNavigation({ onReady }) {
     const [tabBarBadge, setTabBarBadge] = useState(0)
     useEffect(() => {
-        getAsyncStorageItemFallback(BADGES, defaultBadges).then(badges => {
+        async function prepareTabBar() {
+            const badges = await getAsyncStorageItemFallback(BADGES, defaultBadges);
             if (badges.checkEmergencyServicesSettings) {
                 setTabBarBadge(1);
             }
             setAsyncStorageItem(BADGES, badges);
-        })
+        }
+        prepareTabBar();
     }, [])
 
     return (
-        <NavigationContainer>
+        <NavigationContainer onReady={onReady}>
             <TabNav.Navigator
                 initialRouteName={TAB_NAMES.home}
                 screenOptions={({ route }) => ({
-                    tabBarIcon: ({ focused, color, size }) => {
+                    tabBarIcon: ({ color }) => {
                         let iconName;
                         if (route.name === TAB_NAMES.home) {
                             iconName = "home";
@@ -49,9 +51,12 @@ export default function AppNavigation() {
                     showLabel: false
                 }}
             >
-                <TabNav.Screen name={TAB_NAMES.home} component={HomeStackComponent}/>
-                <TabNav.Screen name={TAB_NAMES.recordings} component={RecordingsStackComponent}/>
-                <TabNav.Screen name={TAB_NAMES.settings} component={SettingsScreen} 
+                <TabNav.Screen name={TAB_NAMES.home} 
+                               component={HomeStackComponent}/>
+                <TabNav.Screen name={TAB_NAMES.recordings} 
+                               component={RecordingsStackComponent}/>
+                <TabNav.Screen name={TAB_NAMES.settings} 
+                               component={SettingsScreen} 
                                options={{ tabBarBadge: tabBarBadge }}/>
             </TabNav.Navigator>
         </NavigationContainer>
